@@ -1,0 +1,319 @@
+{
+	"info": {
+		"_postman_id": "nakick-auth-service",
+		"name": "NAKick Auth Service - Email OTP Verification",
+		"description": "Complete authentication flow with email OTP verification",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8081/api/auth/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"auth",
+						"health"
+					]
+				},
+				"description": "Check if auth service is running"
+			},
+			"response": []
+		},
+		{
+			"name": "2. Generate OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save the temp token for next request",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"temp_token\", jsonData.token);",
+							"    console.log(\"Temp Token saved:\", jsonData.token);",
+							"    console.log(\"Check your email for OTP!\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"test@example.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/auth/generate-otp",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"auth",
+						"generate-otp"
+					]
+				},
+				"description": "Generate and send OTP to email. A 6-digit code will be sent to the provided email address."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Verify OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save the verified email token for registration",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"verified_email_token\", jsonData.token);",
+							"    console.log(\"Verified Email Token saved:\", jsonData.token);",
+							"    console.log(\"Now you can register!\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"tempToken\": \"{{temp_token}}\",\n  \"otp\": \"123456\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/auth/verify-otp",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"auth",
+						"verify-otp"
+					]
+				},
+				"description": "Verify the OTP code received via email. Replace '123456' with the actual OTP from your email."
+			},
+			"response": []
+		},
+		{
+			"name": "4. Register User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save the auth token",
+							"if (pm.response.code === 201) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"auth_token\", jsonData.token);",
+							"    console.log(\"Auth Token saved:\", jsonData.token);",
+							"    console.log(\"Registration successful!\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"verifiedEmailToken\": \"{{verified_email_token}}\",\n  \"username\": \"johndoe\",\n  \"email\": \"test@example.com\",\n  \"password\": \"securePassword123\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/auth/register",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"auth",
+						"register"
+					]
+				},
+				"description": "Complete registration with verified email token"
+			},
+			"response": []
+		},
+		{
+			"name": "5. Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"// Save the auth token",
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"auth_token\", jsonData.token);",
+							"    console.log(\"Auth Token saved:\", jsonData.token);",
+							"    console.log(\"Login successful!\");",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"username\": \"johndoe\",\n  \"password\": \"securePassword123\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8081/api/auth/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"auth",
+						"login"
+					]
+				},
+				"description": "Login with username and password. Email must be verified to login."
+			},
+			"response": []
+		},
+		{
+			"name": "6. Validate Token",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{auth_token}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:8081/api/auth/validate",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8081",
+					"path": [
+						"api",
+						"auth",
+						"validate"
+					]
+				},
+				"description": "Validate the JWT authentication token"
+			},
+			"response": []
+		},
+		{
+			"name": "Via API Gateway - Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/auth-service/api/auth/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"auth-service",
+						"api",
+						"auth",
+						"health"
+					]
+				},
+				"description": "Test access through API Gateway"
+			},
+			"response": []
+		},
+		{
+			"name": "Via API Gateway - Generate OTP",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"test@example.com\"\n}"
+				},
+				"url": {
+					"raw": "http://localhost:8080/auth-service/api/auth/generate-otp",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"auth-service",
+						"api",
+						"auth",
+						"generate-otp"
+					]
+				},
+				"description": "Generate OTP through API Gateway"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "gateway_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		}
+	]
+}

@@ -1,0 +1,33 @@
+User Flow Design
+    Flow 1: Browse Products → Add to Cart
+1. User browses products
+   ↓
+2. Clicks "Add to Cart"
+   ↓
+3. Show loading spinner
+   ↓
+4. Update cart icon badge
+   ↓
+5. Show success toast/notification
+   ↓
+6. Optionally open cart drawer
+    Flow 2: View Cart
+1. Click cart icon
+   ↓
+2. Open cart drawer/navigate to cart page
+   ↓
+3. Load cart data
+   ↓
+4. Display items with quantities
+   ↓
+5. Show summary with subtotal/tax/total
+    Flow 3: Modify Cart
+1. Change quantity (+/- buttons)
+   ↓
+2. Real-time price update
+   ↓
+3. Save to backend
+   ↓
+4. Update cart summary
+   ↓
+5. Show loading state during save

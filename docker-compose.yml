@@ -1,0 +1,224 @@
+services:
+  # MongoDB Database for Auth Service
+  mongodb-auth:
+    image: mongo:7.0
+    container_name: mongodb-auth
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: authuser
+      MONGO_INITDB_ROOT_PASSWORD: authpass
+      MONGO_INITDB_DATABASE: authdb
+    ports:
+      - "27020:27017"
+    volumes:
+      - mongodb-auth-data:/data/db
+    networks:
+      - nakick-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database for User Service
+  mongodb-user:
+    image: mongo:7.0
+    container_name: mongodb-user
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: useruser
+      MONGO_INITDB_ROOT_PASSWORD: userpass
+      MONGO_INITDB_DATABASE: userdb
+    ports:
+      - "27018:27017"
+    volumes:
+      - mongodb-user-data:/data/db
+    networks:
+      - nakick-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database for Shoes Service
+  mongodb-shoes:
+    image: mongo:7.0
+    container_name: mongodb-shoes
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: shoesuser
+      MONGO_INITDB_ROOT_PASSWORD: shoespass
+      MONGO_INITDB_DATABASE: shoesdb
+    ports:
+      - "27019:27017"
+    volumes:
+      - mongodb-shoes-data:/data/db
+      - ../uploads:/app/uploads
+    networks:
+      - nakick-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database for Cart Service
+  mongodb-cart:
+    image: mongo:7.0
+    container_name: mongodb-cart
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: cartuser
+      MONGO_INITDB_ROOT_PASSWORD: cartpass
+      MONGO_INITDB_DATABASE: cartdb
+    ports:
+      - "27021:27017"
+    volumes:
+      - mongodb-cart-data:/data/db
+    networks:
+      - nakick-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Eureka Server - Service Discovery
+  eureka-server:
+    build:
+      context: ./infrastructure/eureka-server
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - nakick-network
+    environment:
+      - SPRING_APPLICATION_NAME=eureka-server
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8761/actuator/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: ./infrastructure/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    networks:
+      - nakick-network
+    environment:
+      - SPRING_APPLICATION_NAME=API-GATEWAY
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+    restart: on-failure
+
+  # Auth Service
+  auth-service:
+    build:
+      context: ./service/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    networks:
+      - nakick-network
+    environment:
+      - SPRING_APPLICATION_NAME=AUTH-SERVICE
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb://authuser:authpass@mongodb-auth:27017/authdb?authSource=admin
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+    depends_on:
+      mongodb-auth:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: on-failure
+
+  # Shoes Service
+  shoes-service:
+    build:
+      context: ./service/shoes-service
+      dockerfile: Dockerfile
+    container_name: shoes-service
+    ports:
+      - "8083:8083"
+    networks:
+      - nakick-network
+    environment:
+      - SPRING_APPLICATION_NAME=SHOES-SERVICE
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=shoes-service
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SPRING_DATA_MONGODB_URI=mongodb://shoesuser:shoespass@mongodb-shoes:27017/shoesdb?authSource=admin
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+    depends_on:
+      mongodb-shoes:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: on-failure
+
+  # User Service
+  user-service:
+    build:
+      context: ./service/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8082:8082"
+    networks:
+      - nakick-network
+    environment:
+      - SPRING_APPLICATION_NAME=USER-SERVICE
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb://useruser:userpass@mongodb-user:27017/userdb?authSource=admin
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+    depends_on:
+      mongodb-user:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: on-failure
+
+  # Cart Service
+  cart-service:
+    build:
+      context: ./service/cart-service
+      dockerfile: Dockerfile
+    container_name: cart-service
+    ports:
+      - "8084:8084"
+    networks:
+      - nakick-network
+    environment:
+      - SPRING_APPLICATION_NAME=CART-SERVICE
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - EUREKA_INSTANCE_HOSTNAME=cart-service
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SPRING_DATA_MONGODB_URI=mongodb://cartuser:cartpass@mongodb-cart:27017/cartdb?authSource=admin
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+    depends_on:
+      mongodb-cart:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+    restart: on-failure
+
+networks:
+  nakick-network:
+    driver: bridge
+
+volumes:
+  mongodb-auth-data:
+  mongodb-user-data:
+  mongodb-shoes-data:
+  mongodb-cart-data:
+  uploads:
