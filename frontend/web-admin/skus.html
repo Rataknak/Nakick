@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SKU Management - NAKick Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        /* === MODERN DESIGN SYSTEM === */
+        :root {
+            --red-primary: #e31b23;
+            --red-light: #fce8e9;
+            --red-soft: #fff1f2;
+            --red-dark: #b00f16;
+            --gray-bg: #f4f6fa;
+            --card-white: #ffffff;
+            --text-dark: #1e1f2a;
+            --text-muted: #5e6472;
+            --border-light: #eef0f3;
+            --shadow-sm: 0 4px 12px -6px rgba(0,0,0,0.05);
+            --shadow-md: 0 12px 28px -10px rgba(0,0,0,0.05);
+            --shadow-lg: 0 20px 30px -12px rgba(227,27,35,0.15);
+            --gradient-primary: linear-gradient(135deg, var(--red-primary) 0%, #ff6b6b 100%);
+            --gradient-soft: linear-gradient(135deg, var(--red-soft) 0%, #ffe5e5 100%);
+        }
+
+        body {
+            background: var(--gray-bg);
+            display: flex;
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+
+        /* === SIDEBAR === */
+        .dashboard-sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 4px 0 15px -8px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .logo-fallback {
+            width: 42px;
+            height: 42px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 14px -6px rgba(227,27,35,0.25);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-dark);
+        }
+
+        .logo-text span { color: var(--red-primary); }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 600;
+            color: var(--text-muted);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--gradient-primary);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: -1;
+        }
+
+        .nav-item:hover {
+            background: var(--red-light);
+            color: var(--red-primary);
+            transform: translateX(8px);
+        }
+
+        .nav-item:hover::before {
+            left: 0;
+        }
+
+        .nav-item.active {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 8px 25px -8px rgba(227,27,35,0.4);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active::before {
+            left: 0;
+        }
+
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* === MAIN CONTENT === */
+        .dashboard-main {
+            flex: 1;
+            padding: 2rem 2.5rem;
+            overflow-y: auto;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.2rem;
+        }
+
+        .header-left h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-left h1 i {
+            color: var(--red-primary);
+            background: var(--red-light);
+            padding: 10px;
+            border-radius: 16px;
+            font-size: 1.5rem;
+        }
+
+        .header-left p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+            margin-left: 3.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.8rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 25px -8px rgba(227,27,35,0.25);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover {
+            background: var(--gradient-primary);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px -8px rgba(227,27,35,0.35);
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-dark);
+            border: 1px solid var(--border-light);
+            padding: 0.8rem 1.5rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-bg);
+            border-color: #d1d5db;
+        }
+
+        .admin-card {
+            background: white;
+            border-radius: 32px;
+            padding: 2.5rem;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .admin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
+            border-radius: 32px 32px 0 0;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .card-header h3 {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header h3 i {
+            color: var(--red-primary);
+            background: var(--red-light);
+            padding: 8px;
+            border-radius: 12px;
+            font-size: 1rem;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input, .filter-select {
+            padding: 0.8rem 1.2rem;
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            font-size: 0.95rem;
+            background: #f8fafd;
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .search-input { flex: 1; min-width: 250px; }
+
+        .search-input:focus, .filter-select:focus {
+            border-color: var(--red-primary);
+            background: white;
+            box-shadow: 0 0 0 4px var(--red-soft);
+        }
+
+        /* === TABLE STYLES === */
+        .data-table {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 12px;
+        }
+
+        th {
+            padding: 1.2rem 1rem;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--border-light);
+            position: relative;
+        }
+
+        th::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 60px;
+            height: 2px;
+            background: var(--gradient-primary);
+        }
+
+        td {
+            padding: 1.5rem 1rem;
+            background: white;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+            border-bottom: 1px solid #f0f3fa;
+            font-weight: 500;
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        tr:hover td {
+            background: var(--gradient-soft);
+            transform: scale(1.01);
+        }
+
+        .sku-code {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-weight: 800;
+            color: var(--red-primary);
+            font-size: 0.9rem;
+            background: var(--gradient-soft);
+            padding: 0.4rem 0.8rem;
+            border-radius: 12px;
+            border: 1px solid rgba(227,27,35,0.2);
+            display: inline-block;
+            position: relative;
+        }
+
+        .sku-code::before {
+            content: '📦';
+            margin-right: 0.5rem;
+            font-size: 1rem;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.4s;
+        }
+
+        .badge-success { 
+            background: linear-gradient(135deg, #e0f2e2 0%, #c8e6c9 100%);
+            color: #1f7840;
+            border: 1px solid rgba(31, 120, 64, 0.2);
+        }
+
+        .badge-warning { 
+            background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 100%);
+            color: #92400e;
+            border: 1px solid rgba(146, 64, 14, 0.2);
+        }
+
+        .badge-danger { 
+            background: linear-gradient(135deg, #fee2e2 0%, #fca5a5 100%);
+            color: #991b1b;
+            border: 1px solid rgba(153, 27, 27, 0.2);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .btn-action {
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .btn-edit { background: #eff6ff; color: #2563eb; }
+        .btn-edit:hover { background: #2563eb; color: white; }
+
+        .btn-delete { background: var(--red-light); color: var(--red-primary); }
+        .btn-delete:hover { background: var(--red-primary); color: white; }
+
+        /* === MODAL === */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 31, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .modal.active { display: flex; animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .modal-content {
+            background: white;
+            border-radius: 28px;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .modal-header {
+            padding: 2rem 2.5rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .modal-header h3 { font-size: 1.5rem; font-weight: 700; color: var(--text-dark); }
+
+        .close-modal {
+            background: var(--gray-bg);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: 0.2s;
+        }
+
+        .close-modal:hover { background: var(--red-light); color: var(--red-primary); transform: rotate(90deg); }
+
+        form { padding: 2rem 2.5rem; }
+
+        .form-group { margin-bottom: 1.5rem; }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            font-size: 1rem;
+            background: #f8fafd;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--red-primary);
+            background: white;
+            box-shadow: 0 0 0 4px var(--red-soft);
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2.5rem;
+        }
+
+        .form-actions button { flex: 1; padding: 1rem; border-radius: 16px; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            background: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .back-link:hover { color: var(--red-primary); background: var(--red-light); transform: translateX(-4px); }
+
+        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+        .empty-state i { font-size: 3.5rem; margin-bottom: 1.5rem; color: var(--border-light); }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-light);
+            padding-top: 1.5rem;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-bg);
+            border-radius: 16px;
+        }
+
+        .admin-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .admin-info h4 { font-size: 0.9rem; font-weight: 600; }
+        .admin-info p { font-size: 0.75rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-fallback"><i class="fas fa-shoe-prints"></i></div>
+            <div class="logo-text">NAKick<span>.</span></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="shoes.html" class="nav-item">
+                <i class="fas fa-shoe-prints"></i>
+                <span>Shoes</span>
+            </a>
+            <a href="skus.html" class="nav-item active">
+                <i class="fas fa-layer-group"></i>
+                <span>SKUs</span>
+            </a>
+            <a href="images.html" class="nav-item">
+                <i class="fas fa-image"></i>
+                <span>Images</span>
+            </a>
+            <a href="users.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Users</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Orders</span>
+            </a>
+            <a href="analytics.html" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="admin-profile">
+                <div class="admin-avatar">JD</div>
+                <div class="admin-info">
+                    <h4>Jessie Du</h4>
+                    <p>Inventory Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+
+        <div class="main-header">
+            <div class="header-left">
+                <h1><i class="fas fa-layer-group"></i> SKU Management</h1>
+                <p>Manage product variants, colors, and stock levels</p>
+            </div>
+            <button class="btn-primary" onclick="showCreateSkuForm()">
+                <i class="fas fa-plus"></i> Add SKU
+            </button>
+        </div>
+        
+        <div class="admin-card">
+            <div class="card-header">
+                <h3><i class="fas fa-boxes"></i> SKU Inventory</h3>
+                <button class="btn-secondary" onclick="loadSkus()"><i class="fas fa-sync-alt"></i></button>
+            </div>
+            
+            <div class="filter-bar">
+                <input type="text" id="skuSearch" placeholder="Search by SKU code or product..." class="search-input">
+                <select id="productFilter" class="filter-select">
+                    <option value="">All Products</option>
+                </select>
+                <select id="stockFilter" class="filter-select">
+                    <option value="">All Stock Levels</option>
+                    <option value="low">Low Stock (< 20)</option>
+                    <option value="out">Out of Stock (0)</option>
+                </select>
+            </div>
+
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>SKU Code</th>
+                            <th>Product</th>
+                            <th>Color / Size</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="skusTable">
+                        <tr>
+                            <td colspan="7" class="empty-state">
+                                <i class="fas fa-circle-notch fa-spin"></i><br>
+                                Loading inventory...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <div id="skuModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="skuModalTitle">Add New SKU</h3>
+                <button class="close-modal" onclick="closeModal('skuModal')">&times;</button>
+            </div>
+            <form id="skuForm">
+                <div class="form-group">
+                    <label for="skuProduct">Parent Product</label>
+                    <select id="skuProduct" required>
+                        <option value="">Select Product</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="skuColor">Color</label>
+                        <input type="text" id="skuColor" required placeholder="e.g. Midnight Black">
+                    </div>
+                    <div class="form-group">
+                        <label for="skuSize">Size</label>
+                        <input type="text" id="skuSize" required placeholder="e.g. 10.5">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="skuCode">SKU Code</label>
+                        <input type="text" id="skuCode" required placeholder="NK-AM24-BLK-105">
+                    </div>
+                    <div class="form-group">
+                        <label for="skuPrice">Price ($)</label>
+                        <input type="number" id="skuPrice" step="0.01" required placeholder="0.00">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="skuStock">Stock Quantity</label>
+                        <input type="number" id="skuStock" required placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="skuImage">Product Image</label>
+                        <input type="file" id="skuImage" accept="image/*">
+                        <small style="color: #64748b; display: block; margin-top: 4px;">Upload a high-quality product image</small>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeModal('skuModal')">Cancel</button>
+                    <button type="submit" class="btn-primary">Save SKU</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const GATEWAY_BASE_URL = 'http://localhost:8080';
+        let currentEditId = null;
+        let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            };
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            currentEditId = null;
+            document.getElementById('skuForm').reset();
+        }
+
+        async function loadSkus() {
+            const tbody = document.getElementById('skusTable');
+            try {
+                const response = await fetch(`${GATEWAY_BASE_URL}/shoes-service/api/skus`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) throw new Error('Failed to load SKUs');
+                
+                const skus = await response.json();
+                
+                if (!skus || skus.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-inbox"></i><br>No SKUs found</td></tr>';
+                    return;
+                }
+
+                // Fetch product information for each SKU
+                const skusWithProducts = await Promise.all(
+                    skus.map(async (sku) => {
+                        try {
+                            const productResponse = await fetch(`${GATEWAY_BASE_URL}/shoes-service/api/shoes/${sku.productId}`, {
+                                headers: getAuthHeaders()
+                            });
+                            
+                            if (productResponse.ok) {
+                                const product = await productResponse.json();
+                                return {
+                                    ...sku,
+                                    productName: `${product.brand} - ${product.model}`
+                                };
+                            } else {
+                                return {
+                                    ...sku,
+                                    productName: 'Unknown Product'
+                                };
+                            }
+                        } catch (error) {
+                            console.error('Error fetching product for SKU:', sku.id, error);
+                            return {
+                                ...sku,
+                                productName: 'Error Loading Product'
+                            };
+                        }
+                    })
+                );
+
+                tbody.innerHTML = skusWithProducts.map(sku => {
+                    const stockStatus = sku.stock > 50 ? 'badge-success' : sku.stock > 10 ? 'badge-warning' : 'badge-danger';
+                    const stockLabel = sku.stock > 50 ? 'In Stock' : sku.stock > 0 ? 'Low Stock' : 'Out of Stock';
+                    return `
+                    <tr>
+                        <td><span class="sku-code">${sku.skuCode}</span></td>
+                        <td style="font-weight:700;">${sku.productName || 'N/A'}</td>
+                        <td>${sku.color} / ${sku.size}</td>
+                        <td style="font-weight:700;">$${parseFloat(sku.price).toFixed(2)}</td>
+                        <td><strong>${sku.stock}</strong> units</td>
+                        <td><span class="badge ${stockStatus}">${stockLabel}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-action btn-edit" title="Edit" onclick="editSku('${sku.id}')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-action btn-delete" title="Delete" onclick="deleteSku('${sku.id}')">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                }).join('');
+                
+                await populateProductFilters();
+            } catch (error) {
+                console.error('Error loading SKUs:', error);
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-state" style="color:var(--red-primary)"><i class="fas fa-exclamation-circle"></i><br>Error loading data</td></tr>';
+            }
+        }
+
+        async function populateProductFilters() {
+            try {
+                console.log('Loading products for SKU form...');
+                const response = await fetch(`${GATEWAY_BASE_URL}/shoes-service/api/shoes`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) {
+                    console.error('Failed to fetch products:', response.status, response.statusText);
+                    throw new Error('Failed to fetch products');
+                }
+                
+                const products = await response.json();
+                console.log('Products loaded:', products);
+                
+                const select = document.getElementById('skuProduct');
+                const filterSelect = document.getElementById('productFilter');
+                
+                if (!select || !filterSelect) {
+                    console.error('Product select elements not found');
+                    return;
+                }
+                
+                const currentFilter = filterSelect.value;
+                
+                // Check if products is an array and has items
+                if (!Array.isArray(products) || products.length === 0) {
+                    console.warn('No products found or invalid response');
+                    select.innerHTML = '<option value="">No products available</option>';
+                    filterSelect.innerHTML = '<option value="">All Products</option>';
+                    return;
+                }
+                
+                const options = products.map(p => {
+                    if (!p.id || !p.model) {
+                        console.warn('Invalid product:', p);
+                        return '';
+                    }
+                    return `<option value="${p.id}">${p.brand} - ${p.model}</option>`;
+                }).filter(opt => opt).join('');
+                
+                select.innerHTML = '<option value="">Select Product</option>' + options;
+                filterSelect.innerHTML = '<option value="">All Products</option>' + 
+                    products.map(p => `<option value="${p.brand} - ${p.model}" ${p.brand + ' - ' + p.model === currentFilter ? 'selected' : ''}>${p.brand} - ${p.model}</option>`).join('');
+                    
+                console.log('Product filters populated successfully');
+            } catch (error) {
+                console.error('Error loading products:', error);
+                const select = document.getElementById('skuProduct');
+                const filterSelect = document.getElementById('productFilter');
+                if (select) select.innerHTML = '<option value="">Error loading products</option>';
+                if (filterSelect) filterSelect.innerHTML = '<option value="">All Products</option>';
+            }
+        }
+
+        function showCreateSkuForm() {
+            document.getElementById('skuModalTitle').textContent = 'Add New SKU';
+            currentEditId = null;
+            document.getElementById('skuForm').reset();
+            populateProductFilters();
+            openModal('skuModal');
+        }
+
+        async function editSku(id) {
+            try {
+                const response = await fetch(`${GATEWAY_BASE_URL}/shoes-service/api/skus/${id}`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) throw new Error('Failed to fetch SKU');
+                
+                const sku = await response.json();
+                currentEditId = id;
+                
+                document.getElementById('skuModalTitle').textContent = 'Edit SKU';
+                await populateProductFilters();
+                
+                document.getElementById('skuProduct').value = sku.productId;
+                document.getElementById('skuColor').value = sku.color;
+                document.getElementById('skuSize').value = sku.size;
+                document.getElementById('skuPrice').value = sku.price;
+                document.getElementById('skuStock').value = sku.stock;
+                document.getElementById('skuCode').value = sku.skuCode;
+                
+                openModal('skuModal');
+            } catch (error) {
+                console.error('Error editing SKU:', error);
+                alert('Failed to load SKU for editing');
+            }
+        }
+
+        async function deleteSku(id) {
+            if (!confirm('Are you sure you want to delete this SKU?')) return;
+            
+            try {
+                const response = await fetch(`${GATEWAY_BASE_URL}/shoes-service/api/skus/${id}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete SKU');
+                
+                loadSkus();
+            } catch (error) {
+                console.error('Error deleting SKU:', error);
+                alert('Failed to delete SKU');
+            }
+        }
+
+        document.getElementById('skuForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const skuData = {
+                productId: document.getElementById('skuProduct').value,
+                color: document.getElementById('skuColor').value,
+                size: document.getElementById('skuSize').value,
+                price: parseFloat(document.getElementById('skuPrice').value),
+                stock: parseInt(document.getElementById('skuStock').value),
+                skuCode: document.getElementById('skuCode').value
+            };
+            
+            const btn = e.submitter;
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> Saving...';
+
+            try {
+                const url = currentEditId 
+                    ? `${GATEWAY_BASE_URL}/shoes-service/api/skus/${currentEditId}`
+                    : `${GATEWAY_BASE_URL}/shoes-service/api/skus`;
+                    
+                const method = currentEditId ? 'PUT' : 'POST';
+                
+                // Create a Blob from the JSON string for the sku part
+                const skuBlob = new Blob([JSON.stringify(skuData)], { type: 'application/json' });
+                
+                // Use FormData for image support
+                const formData = new FormData();
+                formData.append('sku', skuBlob);
+                
+                const imageFile = document.getElementById('skuImage').files[0];
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                        // Content-Type is set automatically for FormData
+                    },
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorMsg = await response.text();
+                    throw new Error(errorMsg || 'Failed to save SKU');
+                }
+                
+                closeModal('skuModal');
+                loadSkus();
+            } catch (error) {
+                console.error('Error saving SKU:', error);
+                alert(`Error: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        // Search and Filter functionality
+        document.getElementById('skuSearch').addEventListener('input', filterTable);
+        document.getElementById('productFilter').addEventListener('change', filterTable);
+        document.getElementById('stockFilter').addEventListener('change', filterTable);
+
+        function filterTable() {
+            const searchTerm = document.getElementById('skuSearch').value.toLowerCase();
+            const productTerm = document.getElementById('productFilter').value.toLowerCase();
+            const stockTerm = document.getElementById('stockFilter').value;
+            
+            const rows = document.querySelectorAll('#skusTable tr');
+            
+            rows.forEach(row => {
+                if (row.querySelector('.empty-state')) return;
+                
+                const skuCode = row.cells[0].textContent.toLowerCase();
+                const productName = row.cells[1].textContent.toLowerCase();
+                const stock = parseInt(row.cells[4].textContent);
+                
+                const matchesSearch = skuCode.includes(searchTerm) || productName.includes(searchTerm);
+                const matchesProduct = productTerm === '' || productName === productTerm;
+                
+                let matchesStock = true;
+                if (stockTerm === 'low') matchesStock = stock < 20 && stock > 0;
+                if (stockTerm === 'out') matchesStock = stock === 0;
+                
+                if (matchesSearch && matchesProduct && matchesStock) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadSkus);
+    </script>
+</body>
+</html>

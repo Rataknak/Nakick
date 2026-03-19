@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'services/cart_service.dart';
+import 'services/shoe_service.dart';
+import 'models/cart.dart';
+import 'models/cart_item.dart';
 import 'product_detail_page.dart';
 
 class FavoritePage extends StatefulWidget {
@@ -9,175 +14,423 @@ class FavoritePage extends StatefulWidget {
 }
 
 class _FavoritePageState extends State<FavoritePage> {
-  final List<Map<String, dynamic>> _favoriteShoes = [
-    {
-      'name': 'Air Max 2024',
-      'price': '\$150',
-      'image': 'assets/images/sh1.png',
-      'rating': 4.5,
-      'category': 'Running',
-      'isFavorite': true,
-      'quantity': 1,
-    },
-    {
-      'name': 'Sport Elite',
-      'price': '\$180',
-      'image': 'assets/images/sh1.png',
-      'rating': 4.7,
-      'category': 'Sports',
-      'isFavorite': true,
-      'quantity': 1,
-    },
-    {
-      'name': 'Classic Walk',
-      'price': '\$95',
-      'image': 'assets/images/sh1.png',
-      'rating': 4.3,
-      'category': 'Casual',
-      'isFavorite': true,
-      'quantity': 1,
-    },
-    {
-      'name': 'Pro Runner',
-      'price': '\$165',
-      'image': 'assets/images/sh1.png',
-      'rating': 4.6,
-      'category': 'Running',
-      'isFavorite': true,
-      'quantity': 1,
-    },
-  ];
+  final CartService _cartService = CartService();
+  final ShoeService _shoeService = ShoeService();
+  Cart? _cart;
+  bool _isLoading = true;
+  String? _error;
 
-  void _decreaseQuantity(int index) {
+  final Set<String> _selectedItemIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCart();
+  }
+
+  Future<void> _loadCart() async {
     setState(() {
-      if (_favoriteShoes[index]['quantity'] > 1) {
-        _favoriteShoes[index]['quantity']--;
+      _isLoading = true;
+      _error = null;
+    });
+    try {
+      final cart = await _cartService.getCart();
+      setState(() {
+        _cart = cart;
+        _isLoading = false;
+        _selectedItemIds.removeWhere((id) => !cart.items.any((item) => item.id == id));
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  double get _selectedTotal {
+    if (_cart == null) return 0.0;
+    double total = 0.0;
+    for (var item in _cart!.items) {
+      if (_selectedItemIds.contains(item.id)) {
+        total += item.price * item.quantity;
+      }
+    }
+    return total;
+  }
+
+  int get _selectedCount => _selectedItemIds.length;
+
+  void _toggleSelectAll() {
+    setState(() {
+      if (_selectedItemIds.length == (_cart?.items.length ?? 0)) {
+        _selectedItemIds.clear();
+      } else {
+        _selectedItemIds.addAll(_cart?.items.map((e) => e.id) ?? []);
       }
     });
   }
 
-  void _increaseQuantity(int index) {
-    setState(() {
-      _favoriteShoes[index]['quantity']++;
-    });
+  Future<void> _updateQuantity(String itemId, int newQuantity) async {
+    if (newQuantity < 1) {
+      _showDeleteConfirmation(itemId);
+      return;
+    }
+    try {
+      await _cartService.updateItemQuantity(itemId, newQuantity);
+      _loadCart();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update quantity: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _removeItem(String itemId) async {
+    try {
+      await _cartService.removeItem(itemId);
+      setState(() => _selectedItemIds.remove(itemId));
+      _loadCart();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to remove item: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _editItem(CartItem item) async {
+    try {
+      final shoe = await _shoeService.getShoeById(item.productId);
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailPage(product: shoe.toJson()),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading product details: $e')),
+        );
+      }
+    }
+  }
+
+  void _showDeleteConfirmation(String itemId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Remove from cart?'),
+          content: const Text('This item will be removed from your shopping bag.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _removeItem(itemId);
+              },
+              child: const Text('Remove', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
-            Image.asset(
-              'assets/images/logo.png',
-              height: 35,
-            ),
+            Image.asset('assets/images/logo.png', height: 35),
             const SizedBox(width: 8),
             const Text(
               'NAKick',
-              style: TextStyle(
-                color: Colors.redAccent,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.redAccent, fontSize: 24, fontWeight: FontWeight.bold),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: Colors.grey[800]),
-            onPressed: () {},
+            icon: Icon(Icons.refresh, color: Colors.grey[800], size: 22),
+            onPressed: _loadCart,
           ),
-          IconButton(
-            icon: Icon(Icons.shopping_cart_outlined, color: Colors.grey[800]),
-            onPressed: () {},
-          ),
+          const SizedBox(width: 8),
         ],
       ),
-      body: _favoriteShoes.isEmpty
-          ? _buildEmptyState()
-          : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header Section
-                  Container(
-                    margin: const EdgeInsets.all(16),
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.redAccent, Colors.red.shade700],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: Colors.redAccent))
+          : _error != null
+              ? _buildErrorState()
+              : (_cart == null || _cart!.items.isEmpty)
+                  ? _buildEmptyState()
+                  : _buildCartContent(),
+      bottomNavigationBar: _cart != null && _cart!.items.isNotEmpty
+          ? _buildCheckoutBottomBar()
+          : null,
+    );
+  }
+
+  Widget _buildCartContent() {
+    bool allSelected = _selectedItemIds.length == (_cart?.items.length ?? 0) && (_cart?.items.isNotEmpty ?? false);
+
+    return Column(
+      children: [
+        // Selection Header Bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: Colors.grey[100]!)),
+          ),
+          child: Row(
+            children: [
+              Checkbox(
+                value: allSelected,
+                activeColor: Colors.redAccent,
+                shape: const CircleBorder(),
+                onChanged: (val) => _toggleSelectAll(),
+              ),
+              const Text(
+                'Select All Items',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+              const Spacer(),
+              if (_selectedCount > 0)
+                TextButton(
+                  onPressed: () {
+                    // Logic to delete all selected items could go here
+                  },
+                  child: const Text('Delete', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                ),
+            ],
+          ),
+        ),
+
+        // Cart Items List
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            itemCount: _cart!.items.length,
+            itemBuilder: (context, index) {
+              final item = _cart!.items[index];
+              return _buildCartCard(item);
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCartCard(CartItem item) {
+    bool isSelected = _selectedItemIds.contains(item.id);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Slidable(
+        key: ValueKey(item.id),
+        endActionPane: ActionPane(
+          motion: const ScrollMotion(),
+          extentRatio: 0.5,
+          children: [
+            SlidableAction(
+              onPressed: (context) => _editItem(item),
+              backgroundColor: Colors.blueAccent.withValues(alpha: 0.1),
+              foregroundColor: Colors.blueAccent,
+              icon: Icons.edit_outlined,
+              label: 'Edit',
+            ),
+            SlidableAction(
+              onPressed: (context) => _showDeleteConfirmation(item.id),
+              backgroundColor: Colors.redAccent.withValues(alpha: 0.1),
+              foregroundColor: Colors.redAccent,
+              icon: Icons.delete_outline,
+              label: 'Delete',
+            ),
+          ],
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isSelected ? Colors.redAccent.withValues(alpha: 0.3) : Colors.grey[100]!),
+          ),
+          child: Row(
+            children: [
+              Checkbox(
+                value: isSelected,
+                activeColor: Colors.redAccent,
+                shape: const CircleBorder(),
+                onChanged: (val) {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedItemIds.remove(item.id);
+                    } else {
+                      _selectedItemIds.add(item.id);
+                    }
+                  });
+                },
+              ),
+              const SizedBox(width: 4),
+              Container(
+                width: 85,
+                height: 85,
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: item.imageUrl.startsWith('http')
+                      ? Image.network(item.imageUrl, fit: BoxFit.contain)
+                      : Image.asset('assets/images/sh1.png', fit: BoxFit.contain),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${item.brand} ${item.model}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    child: Row(
+                    const SizedBox(height: 4),
+                    Text(
+                      'Size: ${item.size} | Color: ${item.color}',
+                      style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Icon(
-                          Icons.favorite,
-                          size: 50,
-                          color: Colors.white,
+                        Flexible(
+                          child: Text(
+                            '\$${item.price.toStringAsFixed(2)}',
+                            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        const SizedBox(width: 4),
+                        Container(
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[50],
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Text(
-                                'My Favorites',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                              IconButton(
+                                icon: const Icon(Icons.remove, size: 14),
+                                onPressed: () => _updateQuantity(item.id, item.quantity - 1),
+                                constraints: const BoxConstraints(minWidth: 28),
+                                padding: EdgeInsets.zero,
                               ),
-                              const SizedBox(height: 4),
                               Text(
-                                '${_favoriteShoes.length} items saved',
-                                style: TextStyle(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  fontSize: 14,
-                                ),
+                                '${item.quantity}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.add, size: 14, color: Colors.redAccent),
+                                onPressed: () => _updateQuantity(item.id, item.quantity + 1),
+                                constraints: const BoxConstraints(minWidth: 28),
+                                padding: EdgeInsets.zero,
                               ),
                             ],
                           ),
                         ),
                       ],
                     ),
-                  ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
-                  // Favorites List
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      'Your Saved Shoes',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _favoriteShoes.length,
-                    itemBuilder: (context, index) {
-                      final shoe = _favoriteShoes[index];
-                      return _buildFavoriteCard(shoe, index);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                ],
+  Widget _buildCheckoutBottomBar() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: Colors.grey[100]!)),
+      ),
+      child: SafeArea(
+        child: Row(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Amount (${_selectedCount})',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  '\$${_selectedTotal.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.redAccent),
+                ),
+              ],
+            ),
+            const SizedBox(width: 24),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _selectedCount > 0 ? () {} : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                  disabledBackgroundColor: Colors.grey[200],
+                ),
+                child: const Text('Checkout', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+          const SizedBox(height: 16),
+          Text('Something went wrong\n$_error', textAlign: TextAlign.center, style: const TextStyle(color: Colors.grey)),
+          const SizedBox(height: 16),
+          TextButton(onPressed: _loadCart, child: const Text('Try Again')),
+        ],
+      ),
     );
   }
 
@@ -186,214 +439,21 @@ class _FavoritePageState extends State<FavoritePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 16),
-          Text(
-            'No favorites yet',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Start adding shoes to your favorites!',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[500],
-            ),
-          ),
+          Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey[200]),
+          const SizedBox(height: 20),
+          const Text('Your shopping bag is empty', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.grey)),
           const SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              // Navigate to home or categories
-            },
+            onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(25),
-              ),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
             ),
-            child: const Text(
-              'Browse Shoes',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+            child: const Text('Go Shopping'),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFavoriteCard(Map<String, dynamic> shoe, int index) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ProductDetailPage(product: shoe),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.15),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            // Image Section with better fitting
-            Container(
-              width: 110,
-              height: 110,
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Image.asset(
-                    shoe['image'],
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Center(
-                        child: Icon(
-                          Icons.directions_run,
-                          size: 50,
-                          color: Colors.redAccent.withValues(alpha: 0.5),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            // Details Section
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    shoe['name'],
-                    style: TextStyle(
-                      fontSize: 17,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      shoe['category'],
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 16, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${shoe['rating']}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    shoe['price'],
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.redAccent,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Quantity Controls
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Decrease Button
-                  InkWell(
-                    onTap: () => _decreaseQuantity(index),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: Icon(
-                        Icons.remove,
-                        size: 16,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                  ),
-                  // Quantity Display
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      '${shoe['quantity']}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ),
-                  // Increase Button
-                  InkWell(
-                    onTap: () => _increaseQuantity(index),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: const Icon(
-                        Icons.add,
-                        size: 16,
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        ),
       ),
     );
   }

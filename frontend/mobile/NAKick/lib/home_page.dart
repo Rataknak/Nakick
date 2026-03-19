@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'product_detail_page.dart';
 import 'models/shoe.dart';
 import 'services/shoe_service.dart';
+import 'favorite_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,27 +15,38 @@ class _HomePageState extends State<HomePage> {
   late Future<List<Shoe>> _shoesFuture;
   final ShoeService _shoeService = ShoeService();
 
+  String? _selectedBrand;
+  String? _selectedCategory;
+
+  final List<String> _categories = ['All', 'Running', 'Casual', 'Sports', 'Sneakers'];
+  final List<String> _brands = ['All', 'Nike', 'Adidas', 'Puma', 'New Balance'];
+
   @override
   void initState() {
     super.initState();
-    _shoesFuture = _shoeService.getShoes();
+    _loadShoes();
   }
 
-  void _refreshShoes() {
+  void _loadShoes() {
     setState(() {
-      _shoesFuture = _shoeService.getShoes();
+      final brand = (_selectedBrand == null || _selectedBrand == 'All') ? null : _selectedBrand;
+      final category = (_selectedCategory == null || _selectedCategory == 'All') ? null : _selectedCategory;
+      _shoesFuture = _shoeService.getShoes(brand: brand, category: category);
     });
   }
 
-  final List<String> _categories = ['All', 'Running', 'Casual', 'Sports', 'Sneakers'];
+  void _refreshShoes() {
+    _loadShoes();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0,
         automaticallyImplyLeading: false,
         title: Row(
           children: [
@@ -64,9 +76,73 @@ class _HomePageState extends State<HomePage> {
           ),
           IconButton(
             icon: Icon(Icons.shopping_cart_outlined, color: Colors.grey[800]),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FavoritePage()),
+              );
+            },
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(50),
+          child: Container(
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                bottom: BorderSide(color: Colors.grey[100]!, width: 1),
+              ),
+            ),
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _categories.length,
+              itemBuilder: (context, index) {
+                final category = _categories[index];
+                final isSelected = (_selectedCategory ?? 'All') == category;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedCategory = category;
+                    });
+                    _loadShoes();
+                  },
+                  child: Container(
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    margin: const EdgeInsets.only(right: 8),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          category,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isSelected ? Colors.redAccent : Colors.grey[600],
+                          ),
+                        ),
+                        if (isSelected)
+                          Container(
+                            margin: const EdgeInsets.only(top: 4),
+                            height: 3,
+                            width: 20,
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          )
+                        else
+                          const SizedBox(height: 7),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: () async => _refreshShoes(),
@@ -143,11 +219,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // Categories Section
+              // Brands Section
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Text(
-                  'Categories',
+                  'Popular Brands',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -157,32 +233,40 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 12),
               SizedBox(
-                height: 40,
+                height: 45,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: _categories.length,
+                  itemCount: _brands.length,
                   itemBuilder: (context, index) {
+                    final brand = _brands[index];
+                    final isSelected = (_selectedBrand ?? 'All') == brand;
                     return Container(
                       margin: const EdgeInsets.only(right: 12),
                       child: ChoiceChip(
-                        label: Text(_categories[index]),
-                        selected: index == 0,
+                        label: Text(brand),
+                        selected: isSelected,
                         selectedColor: Colors.redAccent,
                         backgroundColor: Colors.grey[200],
                         labelStyle: TextStyle(
-                          color: index == 0 ? Colors.white : Colors.grey[800],
+                          color: isSelected ? Colors.white : Colors.grey[800],
                           fontWeight: FontWeight.w500,
                         ),
-                        onSelected: (selected) {},
+                        onSelected: (selected) {
+                          setState(() {
+                            _selectedBrand = brand;
+                          });
+                          _loadShoes();
+                        },
                       ),
                     );
                   },
                 ),
               ),
 
-              // Featured Products Section
               const SizedBox(height: 24),
+
+              // Featured Products Section
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
@@ -276,7 +360,7 @@ class _HomePageState extends State<HomePage> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailPage(product: shoe.toLegacyMap()),
+            builder: (context) => ProductDetailPage(product: shoe.toLegacyMap()..addAll({'id': shoe.id, 'brand': shoe.brand, 'model': shoe.model, 'description': shoe.description, 'category': shoe.category})),
           ),
         );
       },
@@ -302,7 +386,7 @@ class _HomePageState extends State<HomePage> {
                 decoration: BoxDecoration(
                   color: Colors.grey[50],
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                ),
+                  ),
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                   child: Padding(
@@ -358,6 +442,15 @@ class _HomePageState extends State<HomePage> {
                           fontSize: 12,
                           color: Colors.grey[600],
                           fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '(120 reviews)',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w400,
                         ),
                       ),
                     ],

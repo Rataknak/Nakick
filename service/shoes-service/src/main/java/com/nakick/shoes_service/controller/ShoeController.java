@@ -3,11 +3,13 @@ package com.nakick.shoes_service.controller;
 import com.nakick.shoes_service.dto.ShoeRequest;
 import com.nakick.shoes_service.dto.ShoeResponse;
 import com.nakick.shoes_service.service.ShoeService;
+import com.nakick.shoes_service.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -17,13 +19,37 @@ import java.util.List;
 public class ShoeController {
     
     private final ShoeService shoeService;
+    private final FileStorageService fileStorageService;
     
-    @PostMapping
+    @PostMapping(consumes = {"application/json", "multipart/form-data"})
     public ResponseEntity<ShoeResponse> createShoe(
-            @Valid @RequestBody ShoeRequest request
+            @RequestParam(value = "shoe", required = false) String shoeJson,
+            @RequestParam(value = "image", required = false) MultipartFile image
     ) {
-        ShoeResponse response = shoeService.createShoe(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        try {
+            ShoeRequest request;
+            
+            // Handle JSON from form data or regular JSON body
+            if (shoeJson != null) {
+                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                request = objectMapper.readValue(shoeJson, ShoeRequest.class);
+            } else {
+                // This case won't happen with current frontend but kept for compatibility
+                return ResponseEntity.badRequest().build();
+            }
+            
+            // Handle image upload if provided
+            if (image != null && !image.isEmpty()) {
+                String fileName = fileStorageService.storeFile(image);
+                String imageUrl = "http://localhost:8083/api/images/" + fileName;
+                request.setImageUrl(imageUrl);
+            }
+            
+            ShoeResponse response = shoeService.createShoe(request);
+            return new ResponseEntity<>(response, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
     
     @GetMapping

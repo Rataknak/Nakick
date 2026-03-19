@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - NAKick Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        :root {
+            --red-primary: #e31b23;
+            --red-light: #fce8e9;
+            --red-soft: #fff1f2;
+            --red-dark: #b00f16;
+            --gray-bg: #f4f6fa;
+            --card-white: #ffffff;
+            --text-dark: #1e1f2a;
+            --text-muted: #5e6472;
+            --border-light: #eef0f3;
+            --shadow-sm: 0 4px 12px -6px rgba(0,0,0,0.05);
+            --shadow-md: 0 12px 28px -10px rgba(0,0,0,0.05);
+            --shadow-lg: 0 20px 30px -12px rgba(227,27,35,0.15);
+        }
+
+        body {
+            background: var(--gray-bg);
+            display: flex;
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+
+        /* === SIDEBAR === */
+        .dashboard-sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 4px 0 15px -8px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .logo-fallback {
+            width: 42px;
+            height: 42px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 14px -6px rgba(227,27,35,0.25);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-dark);
+        }
+
+        .logo-text span { color: var(--red-primary); }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: var(--red-light);
+            color: var(--red-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: var(--red-primary);
+            color: white;
+            box-shadow: 0 4px 12px -6px rgba(227,27,35,0.3);
+        }
+
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* === MAIN CONTENT === */
+        .dashboard-main {
+            flex: 1;
+            padding: 2rem 2.5rem;
+            overflow-y: auto;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.2rem;
+        }
+
+        .header-left h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-left h1 i {
+            color: var(--red-primary);
+            background: var(--red-light);
+            padding: 10px;
+            border-radius: 16px;
+            font-size: 1.5rem;
+        }
+
+        .header-left p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+            margin-left: 3.5rem;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: var(--text-dark);
+            border: 1px solid var(--border-light);
+            padding: 0.8rem 1.5rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-bg);
+            border-color: #d1d5db;
+        }
+
+        .admin-card {
+            background: white;
+            border-radius: 28px;
+            padding: 2rem;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .card-header h3 {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header h3 i {
+            color: var(--red-primary);
+            background: var(--red-light);
+            padding: 8px;
+            border-radius: 12px;
+            font-size: 1rem;
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input, .filter-select {
+            padding: 0.8rem 1.2rem;
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            font-size: 0.95rem;
+            background: #f8fafd;
+            color: var(--text-dark);
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .search-input { flex: 1; min-width: 250px; }
+
+        .search-input:focus, .filter-select:focus {
+            border-color: var(--red-primary);
+            background: white;
+            box-shadow: 0 0 0 4px var(--red-soft);
+        }
+
+        /* === TABLE STYLES === */
+        .data-table {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        th {
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        td {
+            padding: 1.2rem 1rem;
+            background: white;
+            color: var(--text-dark);
+            font-size: 0.95rem;
+            border-bottom: 1px solid #f0f3fa;
+            font-weight: 500;
+        }
+
+        tr:hover td { background: #fafbfc; }
+
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+
+        .user-avatar {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: var(--red-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--red-primary);
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        .user-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .status-active { background: #1f7840; color: #1f7840; }
+        .status-inactive { background: #d93030; color: #d93030; }
+
+        .role-badge {
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #f0f3f8;
+            color: var(--text-muted);
+        }
+
+        .role-badge.admin { background: var(--red-light); color: var(--red-primary); }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .btn-action {
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+        }
+
+        .btn-view { background: #f0fdf4; color: #16a34a; }
+        .btn-view:hover { background: #16a34a; color: white; }
+
+        .btn-edit { background: #eff6ff; color: #2563eb; }
+        .btn-edit:hover { background: #2563eb; color: white; }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            background: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .back-link:hover { color: var(--red-primary); background: var(--red-light); transform: translateX(-4px); }
+
+        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+        .empty-state i { font-size: 3.5rem; margin-bottom: 1.5rem; color: var(--border-light); }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-light);
+            padding-top: 1.5rem;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-bg);
+            border-radius: 16px;
+        }
+
+        .admin-avatar-small {
+            width: 40px;
+            height: 40px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .admin-info h4 { font-size: 0.9rem; font-weight: 600; }
+        .admin-info p { font-size: 0.75rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-fallback"><i class="fas fa-shoe-prints"></i></div>
+            <div class="logo-text">NAKick<span>.</span></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="shoes.html" class="nav-item">
+                <i class="fas fa-shoe-prints"></i>
+                <span>Shoes</span>
+            </a>
+            <a href="skus.html" class="nav-item">
+                <i class="fas fa-layer-group"></i>
+                <span>SKUs</span>
+            </a>
+            <a href="images.html" class="nav-item">
+                <i class="fas fa-image"></i>
+                <span>Images</span>
+            </a>
+            <a href="users.html" class="nav-item active">
+                <i class="fas fa-users"></i>
+                <span>Users</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Orders</span>
+            </a>
+            <a href="analytics.html" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="admin-profile">
+                <div class="admin-avatar-small">JD</div>
+                <div class="admin-info">
+                    <h4>Jessie Du</h4>
+                    <p>Inventory Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+
+        <div class="main-header">
+            <div class="header-left">
+                <h1><i class="fas fa-users"></i> User Management</h1>
+                <p>Manage customer accounts and administrative profiles</p>
+            </div>
+            <button class="btn-secondary" onclick="loadUsers()"><i class="fas fa-sync-alt"></i> Refresh</button>
+        </div>
+        
+        <div class="admin-card">
+            <div class="card-header">
+                <h3><i class="fas fa-user-friends"></i> Customer Accounts</h3>
+            </div>
+            
+            <div class="filter-bar">
+                <input type="text" id="userSearch" placeholder="Search by name, email, or username..." class="search-input">
+                <select id="roleFilter" class="filter-select">
+                    <option value="">All Roles</option>
+                    <option value="USER">User</option>
+                    <option value="ADMIN">Admin</option>
+                </select>
+                <select id="statusFilter" class="filter-select">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+
+            <div id="usersTable" class="data-table">
+                <div class="empty-state">
+                    <i class="fas fa-circle-notch fa-spin"></i><br>
+                    Fetching user records...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const GATEWAY_BASE_URL = 'http://localhost:8080';
+        let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+
+        function getAuthHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`
+            };
+        }
+
+        async function loadUsers() {
+            // Mock data for display
+            const sampleUsers = [
+                { id: '1', username: 'john_doe', email: 'john@example.com', firstName: 'John', lastName: 'Doe', role: 'USER', active: true, createdAt: '2024-01-15' },
+                { id: '2', username: 'jane_smith', email: 'jane@example.com', firstName: 'Jane', lastName: 'Smith', role: 'USER', active: true, createdAt: '2024-02-20' },
+                { id: '3', username: 'admin_user', email: 'admin@nakick.com', firstName: 'Admin', lastName: 'User', role: 'ADMIN', active: true, createdAt: '2024-01-01' },
+                { id: '4', username: 'alex_runner', email: 'alex@sport.com', firstName: 'Alex', lastName: 'Morgan', role: 'USER', active: false, createdAt: '2024-03-05' }
+            ];
+            
+            displayUsers(sampleUsers);
+        }
+
+        function displayUsers(users) {
+            const tableContainer = document.getElementById('usersTable');
+            tableContainer.innerHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User Profile</th>
+                            <th>Email Address</th>
+                            <th>Access Role</th>
+                            <th>Account Status</th>
+                            <th>Joined Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => {
+                            const initials = user.firstName.charAt(0) + user.lastName.charAt(0);
+                            const roleClass = user.role === 'ADMIN' ? 'admin' : '';
+                            const statusClass = user.active ? 'status-active' : 'status-inactive';
+                            return `
+                            <tr>
+                                <td>
+                                    <div class="user-info">
+                                        <div class="user-avatar">${initials}</div>
+                                        <div>
+                                            <div style="font-weight: 700; color: var(--text-dark);">${user.firstName} ${user.lastName}</div>
+                                            <div style="font-size: 0.8rem; color: var(--text-muted);">@${user.username}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="font-weight: 500;">${user.email}</td>
+                                <td><span class="role-badge ${roleClass}">${user.role}</span></td>
+                                <td>
+                                    <div class="user-status ${statusClass}">
+                                        <div class="status-dot ${statusClass}"></div>
+                                        ${user.active ? 'Active' : 'Inactive'}
+                                    </div>
+                                </td>
+                                <td>${new Date(user.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-view" title="View Profile" onclick="viewUser('${user.id}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn-action btn-edit" title="Edit Permissions" onclick="editUser('${user.id}')">
+                                            <i class="fas fa-user-cog"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function viewUser(userId) { alert(`User profile viewing (ID: ${userId}) - Management module loading...`); }
+        function editUser(userId) { alert(`User permissions edit (ID: ${userId}) - Management module loading...`); }
+
+        document.getElementById('userSearch').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(term) ? '' : 'none';
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', loadUsers);
+    </script>
+</body>
+</html>

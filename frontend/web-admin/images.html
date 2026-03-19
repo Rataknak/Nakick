@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Management - NAKick Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        :root {
+            --red-primary: #e31b23;
+            --red-light: #fce8e9;
+            --red-soft: #fff1f2;
+            --red-dark: #b00f16;
+            --gray-bg: #f4f6fa;
+            --card-white: #ffffff;
+            --text-dark: #1e1f2a;
+            --text-muted: #5e6472;
+            --border-light: #eef0f3;
+            --shadow-sm: 0 4px 12px -6px rgba(0,0,0,0.05);
+            --shadow-md: 0 12px 28px -10px rgba(0,0,0,0.05);
+            --shadow-lg: 0 20px 30px -12px rgba(227,27,35,0.15);
+        }
+
+        body {
+            background: var(--gray-bg);
+            display: flex;
+            min-height: 100vh;
+            color: var(--text-dark);
+        }
+
+        /* === SIDEBAR === */
+        .dashboard-sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            box-shadow: 4px 0 15px -8px rgba(0,0,0,0.05);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .logo-fallback {
+            width: 42px;
+            height: 42px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 14px -6px rgba(227,27,35,0.25);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-dark);
+        }
+
+        .logo-text span { color: var(--red-primary); }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: var(--red-light);
+            color: var(--red-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: var(--red-primary);
+            color: white;
+            box-shadow: 0 4px 12px -6px rgba(227,27,35,0.3);
+        }
+
+        .nav-item i { width: 20px; text-align: center; }
+
+        /* === MAIN CONTENT === */
+        .dashboard-main {
+            flex: 1;
+            padding: 2rem 2.5rem;
+            overflow-y: auto;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.2rem;
+        }
+
+        .header-left h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-left h1 i {
+            color: var(--red-primary);
+            background: var(--red-light);
+            padding: 10px;
+            border-radius: 16px;
+            font-size: 1.5rem;
+        }
+
+        .header-left p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 4px;
+            margin-left: 3.5rem;
+        }
+
+        .btn-primary {
+            background: var(--red-primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 8px 16px -6px rgba(227,27,35,0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--red-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px -8px rgba(227,27,35,0.4);
+        }
+
+        .admin-card {
+            background: white;
+            border-radius: 28px;
+            padding: 2rem;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .card-header h3 {
+            font-weight: 700;
+            font-size: 1.3rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-header h3 i {
+            color: var(--red-primary);
+            background: var(--red-light);
+            padding: 8px;
+            border-radius: 12px;
+            font-size: 1rem;
+        }
+
+        /* === UPLOAD AREA === */
+        .upload-area {
+            border: 2px dashed var(--border-light);
+            border-radius: 24px;
+            padding: 4rem 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            margin-bottom: 3rem;
+            background: #f8fafd;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--red-primary);
+            background: var(--red-soft);
+            transform: scale(1.01);
+        }
+
+        .upload-icon {
+            font-size: 3.5rem;
+            color: var(--red-primary);
+            margin-bottom: 1.5rem;
+            opacity: 0.8;
+        }
+
+        .upload-text {
+            color: var(--text-dark);
+            font-weight: 700;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* === IMAGES GRID === */
+        .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .image-card {
+            background: white;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .image-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 220px;
+            overflow: hidden;
+            background: #eee;
+            position: relative;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .image-card:hover .image-preview img {
+            transform: scale(1.1);
+        }
+
+        .image-info {
+            padding: 1.2rem;
+        }
+
+        .image-name {
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 0.4rem;
+            font-size: 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .image-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .image-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .image-card:hover .image-actions {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .btn-img-action {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .btn-view { background: rgba(255,255,255,0.9); color: var(--text-dark); }
+        .btn-view:hover { background: white; color: var(--red-primary); }
+
+        .btn-delete { background: rgba(227,27,35,0.9); color: white; }
+        .btn-delete:hover { background: var(--red-primary); }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            background: white;
+            padding: 0.6rem 1.2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        .back-link:hover { color: var(--red-primary); background: var(--red-light); transform: translateX(-4px); }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .loading-overlay.active { display: flex; }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid var(--red-light);
+            border-top-color: var(--red-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .empty-state {
+            text-align: center;
+            padding: 5rem 2rem;
+            grid-column: 1 / -1;
+            color: var(--text-muted);
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            color: var(--border-light);
+        }
+
+        /* Sidebar Footer */
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-light);
+            padding-top: 1.5rem;
+        }
+
+        .admin-profile {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-bg);
+            border-radius: 16px;
+        }
+
+        .admin-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+        }
+
+        .admin-info h4 { font-size: 0.9rem; font-weight: 600; }
+        .admin-info p { font-size: 0.75rem; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-logo">
+            <div class="logo-fallback"><i class="fas fa-shoe-prints"></i></div>
+            <div class="logo-text">NAKick<span>.</span></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="shoes.html" class="nav-item">
+                <i class="fas fa-shoe-prints"></i>
+                <span>Shoes</span>
+            </a>
+            <a href="skus.html" class="nav-item">
+                <i class="fas fa-layer-group"></i>
+                <span>SKUs</span>
+            </a>
+            <a href="images.html" class="nav-item active">
+                <i class="fas fa-image"></i>
+                <span>Images</span>
+            </a>
+            <a href="users.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Users</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Orders</span>
+            </a>
+            <a href="analytics.html" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="admin-profile">
+                <div class="admin-avatar">JD</div>
+                <div class="admin-info">
+                    <h4>Jessie Du</h4>
+                    <p>Inventory Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="dashboard-main">
+
+        <div class="page-header">
+            <div class="header-left">
+                <h1><i class="fas fa-image"></i> Image Management</h1>
+                <p>Upload and manage product visual assets</p>
+            </div>
+            <button class="btn-primary" onclick="document.getElementById('imageUpload').click()">
+                <i class="fas fa-upload"></i> Upload Images
+            </button>
+        </div>
+        
+        <div class="admin-card">
+            <div class="card-header">
+                <h3><i class="fas fa-images"></i> Visual Assets</h3>
+                <button class="btn-secondary" onclick="loadImages()"><i class="fas fa-sync-alt"></i></button>
+            </div>
+            
+            <input type="file" id="imageUpload" accept="image/*" style="display:none" onchange="uploadImage(this)" multiple>
+            
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <div class="upload-text">Drag and drop images here</div>
+                <div class="upload-subtext">or click to browse from your computer (JPG, PNG, WebP)</div>
+            </div>
+            
+            <div id="imagesGrid" class="images-grid">
+                <div class="empty-state">
+                    <i class="fas fa-circle-notch fa-spin"></i><br>
+                    Scanning for assets...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <div id="loadingText" style="font-weight: 700; color: var(--text-dark);">Processing...</div>
+    </div>
+
+    <script>
+        const GATEWAY_BASE_URL = 'http://localhost:8080';
+        let authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || '';
+
+        function getAuthHeaders() {
+            return { 'Authorization': `Bearer ${authToken}` };
+        }
+
+        function toggleLoading(active, text = 'Processing...') {
+            const overlay = document.getElementById('loadingOverlay');
+            document.getElementById('loadingText').textContent = text;
+            if (active) overlay.classList.add('active');
+            else overlay.classList.remove('active');
+        }
+
+        async function uploadImages(files) {
+            toggleLoading(true, `Uploading ${files.length} image(s)...`);
+            
+            let successCount = 0;
+            for (let file of files) {
+                if (!file.type.startsWith('image/')) continue;
+                
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const response = await fetch(`${GATEWAY_BASE_URL}/shoes-service/api/images/upload`, {
+                        method: 'POST',
+                        headers: getAuthHeaders(),
+                        body: formData
+                    });
+                    
+                    if (response.ok) successCount++;
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                }
+            }
+            
+            toggleLoading(false);
+            if (successCount > 0) loadImages();
+            else alert('Failed to upload images. Check console for details.');
+        }
+
+        function uploadImage(input) {
+            if (input.files && input.files.length > 0) {
+                uploadImages(input.files);
+                input.value = ''; // Reset input
+            }
+        }
+
+        async function deleteImage(filename) {
+            if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
+            
+            toggleLoading(true, 'Deleting asset...');
+            try {
+                const response = await fetch(`${GATEWAY_BASE_URL}/shoes-service/api/images/${filename}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+                
+                if (!response.ok) throw new Error('Failed to delete image');
+                loadImages();
+            } catch (error) {
+                console.error('Error deleting image:', error);
+                alert('Failed to delete image');
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function viewImage(filename) {
+            window.open(`${GATEWAY_BASE_URL}/shoes-service/api/images/${filename}`, '_blank');
+        }
+
+        async function loadImages() {
+            const grid = document.getElementById('imagesGrid');
+            // Mocking some images as there is no list endpoint
+            // In a real app, you would fetch the list of filenames
+            const mockImages = ['sample-shoe-1.jpg', 'sample-shoe-2.jpg', 'nike-air.png'];
+            
+            if (mockImages.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-images"></i><br>
+                        No visual assets found. Start by uploading some images.
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = mockImages.map(img => `
+                <div class="image-card">
+                    <div class="image-preview">
+                        <img src="${GATEWAY_BASE_URL}/shoes-service/api/images/${img}" alt="${img}" onerror="this.src='https://via.placeholder.com/300x200?text=Image+Not+Found'">
+                    </div>
+                    <div class="image-info">
+                        <div class="image-name">${img}</div>
+                        <div class="image-meta">
+                            <span><i class="far fa-file-image"></i> Image File</span>
+                            <span>Asset</span>
+                        </div>
+                    </div>
+                    <div class="image-actions">
+                        <button class="btn-img-action btn-view" title="View Full" onclick="viewImage('${img}')">
+                            <i class="fas fa-expand"></i>
+                        </button>
+                        <button class="btn-img-action btn-delete" title="Delete" onclick="deleteImage('${img}')">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Drag and drop setup
+        const uploadArea = document.getElementById('uploadArea');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.add('dragover'));
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, () => uploadArea.classList.remove('dragover'));
+        });
+
+        uploadArea.addEventListener('drop', e => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) uploadImages(files);
+        });
+
+        uploadArea.addEventListener('click', () => document.getElementById('imageUpload').click());
+
+        document.addEventListener('DOMContentLoaded', loadImages);
+    </script>
+</body>
+</html>

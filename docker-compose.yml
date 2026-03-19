@@ -212,6 +212,17 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  # Web Admin Frontend
+  web-admin:
+    image: nginx:alpine
+    container_name: web-admin
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/web-admin:/usr/share/nginx/html
+    networks:
+      - nakick-network
+
 networks:
   nakick-network:
     driver: bridge

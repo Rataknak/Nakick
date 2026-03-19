@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAKick Admin · Dashboard</title>
+    <!-- Font Awesome 6 (free) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Google Fonts: Inter (clean, modern) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            background: #f4f6fa;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* === RED ACCENT COLOR (consistent with logo & brand) === */
+        :root {
+            --red-primary: #e31b23;      /* NAKick strong red */
+            --red-light: #fce8e9;
+            --red-soft: #fff1f2;
+            --red-dark: #b00f16;
+            --gray-bg: #f8fafd;
+            --card-white: #ffffff;
+            --text-dark: #1e1f2a;
+            --text-muted: #5e6472;
+            --border-light: #eef0f3;
+        }
+
+        /* === SIDEBAR (red accent) === */
+        .dashboard-sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            padding: 2rem 1.5rem;
+            box-shadow: 4px 0 15px -8px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 2.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .logo-fallback {
+            width: 42px;
+            height: 42px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
+            box-shadow: 0 8px 14px -6px rgba(227,27,35,0.25);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: var(--text-dark);
+        }
+
+        .logo-text span {
+            color: var(--red-primary);
+            font-weight: 600;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: 0.2s ease;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+
+        .nav-item:hover {
+            background: var(--red-light);
+            color: var(--red-primary);
+            transform: translateX(4px);
+        }
+
+        .nav-item.active {
+            background: var(--red-primary);
+            color: white;
+            box-shadow: 0 4px 12px -6px rgba(227,27,35,0.3);
+        }
+
+        .nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item.active i {
+            color: white;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            border-top: 1px solid var(--border-light);
+            padding-top: 1.5rem;
+        }
+
+        .admin-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--gray-bg);
+            border-radius: 16px;
+        }
+
+        .admin-avatar {
+            width: 40px;
+            height: 40px;
+            background: var(--red-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .admin-info h4 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.2rem;
+        }
+
+        .admin-info p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .admin-info p i {
+            color: var(--red-primary);
+            font-size: 0.6rem;
+        }
+
+        /* === MAIN CONTENT AREA === */
+        .dashboard-main {
+            flex: 1;
+            padding: 2rem 2.5rem;
+            overflow-y: auto;
+        }
+
+        .main-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.2rem;
+        }
+
+        .header-left h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.02em;
+        }
+
+        .header-left p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .header-left p i {
+            color: var(--red-primary);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            background: white;
+            padding: 0.5rem 1rem 0.5rem 1.8rem;
+            border-radius: 60px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 12px -6px rgba(0,0,0,0.05);
+        }
+
+        .date-badge {
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            background: #f0f3f8;
+            padding: 0.4rem 1rem;
+            border-radius: 40px;
+        }
+
+        .notification-icon {
+            position: relative;
+            font-size: 1.3rem;
+            color: #67758b;
+            cursor: pointer;
+        }
+
+        .notification-dot {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 10px;
+            height: 10px;
+            background: var(--red-primary);
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+
+        /* KPI cards (4) */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.8rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .kpi-card {
+            background: white;
+            border-radius: 28px;
+            padding: 1.5rem 1.5rem 1.8rem 1.5rem;
+            box-shadow: 0 12px 28px -10px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-light);
+            transition: 0.15s ease;
+            cursor: pointer;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(227,27,35,0.2);
+            box-shadow: 0 20px 30px -12px rgba(227,27,35,0.15);
+        }
+
+        .kpi-icon {
+            width: 52px;
+            height: 52px;
+            background: var(--red-light);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--red-primary);
+            font-size: 1.8rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .kpi-label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            line-height: 1.2;
+        }
+
+        .kpi-trend {
+            font-size: 0.85rem;
+            margin-top: 8px;
+            color: #22a65e;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .trend-down { color: #d93030; }
+
+        /* charts / double card row */
+        .row-duo {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1.8rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 28px;
+            padding: 1.5rem 1.5rem 1.8rem;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 10px 22px -10px rgba(0,0,0,0.03);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header h3 {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-header h3 i {
+            color: var(--red-primary);
+            background: var(--red-light);
+            padding: 6px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+        }
+
+        .badge-option {
+            background: #f0f3f8;
+            padding: 0.3rem 1rem;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #4f5a69;
+        }
+
+        /* placeholder bar / chart simulation */
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            gap: 1rem;
+            height: 200px;
+            margin-top: 1.8rem;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bar {
+            width: 100%;
+            background: linear-gradient(to top, var(--red-primary), #ff5a5f);
+            border-radius: 16px 16px 8px 8px;
+            min-height: 20px;
+            transition: 0.2s;
+        }
+
+        .bar-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        /* doughnut simulation (simplified) */
+        .donut-placeholder {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-top: 1rem;
+        }
+
+        .donut-ring {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            background: conic-gradient(var(--red-primary) 0deg 220deg, #f0d7d8 220deg 360deg);
+            border: 6px solid white;
+            box-shadow: 0 6px 16px rgba(227,27,35,0.2);
+        }
+
+        .donut-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            background: var(--red-primary);
+            border-radius: 8px;
+        }
+
+        .legend-color.other { background: #e0a8aa; }
+
+        /* recent orders table */
+        .recent-orders {
+            background: white;
+            border-radius: 28px;
+            padding: 1.5rem;
+            border: 1px solid var(--border-light);
+            margin-top: 1rem;
+        }
+
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.8rem;
+        }
+
+        .orders-table th {
+            text-align: left;
+            padding: 0.8rem 0.2rem 0.8rem 0;
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: #7a8599;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .orders-table td {
+            padding: 1rem 0.2rem 1rem 0;
+            border-bottom: 1px solid #f0f3fa;
+            color: var(--text-dark);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .orders-table tr:last-child td { border-bottom: none; }
+
+        .status-badge {
+            background: var(--red-light);
+            color: var(--red-primary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            display: inline-block;
+        }
+
+        .status-badge.delivered {
+            background: #e0f2e2;
+            color: #1f7840;
+        }
+
+        .status-badge.pending {
+            background: #fff1cf;
+            color: #b6560c;
+        }
+
+        .action-link {
+            color: var(--red-primary);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border-bottom: 1px dashed transparent;
+        }
+
+        .action-link:hover { border-bottom-color: var(--red-primary); }
+
+        /* footer */
+        .dashboard-footer {
+            margin-top: 2.5rem;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            border-top: 1px dashed var(--border-light);
+            padding-top: 1.8rem;
+        }
+
+        .dashboard-footer i {
+            color: var(--red-primary);
+        }
+
+        /* === API Documentation Panel === */
+        .api-docs-panel {
+            position: fixed;
+            right: -500px;
+            top: 0;
+            width: 500px;
+            height: 100vh;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+            transition: right 0.3s ease;
+            z-index: 1000;
+            overflow-y: auto;
+            border-left: 4px solid var(--red-primary);
+        }
+
+        .api-docs-panel.active { right: 0; }
+
+        .api-panel-header {
+            position: sticky;
+            top: 0;
+            background: var(--red-primary);
+            color: white;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .api-panel-header h2 { margin: 0; font-size: 1.3rem; }
+
+        .close-panel {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .api-panel-content { padding: 1.5rem; }
+
+        .api-section {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .api-section:last-child { border-bottom: none; }
+
+        .api-section-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .api-section-title i {
+            color: var(--red-primary);
+            font-size: 1.1rem;
+        }
+
+        .api-endpoint {
+            background: var(--gray-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 0.8rem;
+            border-left: 4px solid var(--red-primary);
+            font-size: 0.85rem;
+        }
+
+        .endpoint-method {
+            display: inline-block;
+            font-weight: 700;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .endpoint-method.get { background: #e3f2fd; color: #1976d2; }
+        .endpoint-method.post { background: #e8f5e8; color: #2e7d32; }
+        .endpoint-method.put { background: #fff1cf; color: #b6560c; }
+        .endpoint-method.delete { background: var(--red-light); color: var(--red-primary); }
+
+        .endpoint-path {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .endpoint-info {
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        .api-tester {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--red-primary);
+        }
+
+        .tester-header {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-dark);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .tester-header i {
+            color: var(--red-primary);
+        }
+
+        .tester-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .tester-form input, .tester-form select, .tester-form textarea {
+            padding: 0.8rem;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .tester-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .test-button {
+            background: var(--red-primary);
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+
+        .test-button:hover {
+            background: var(--red-dark);
+        }
+
+        .test-response {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.85rem;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .response-success {
+            background: #e0f2e2;
+            border: 1px solid #1f7840;
+            color: #1f7840;
+        }
+
+        .response-error {
+            background: var(--red-light);
+            border: 1px solid var(--red-primary);
+            color: var(--red-primary);
+        }
+    </style>
+</head>
+<body>
+    <!-- SIDEBAR (red accent) -->
+    <aside class="dashboard-sidebar">
+        <div class="sidebar-logo">
+            <!-- logo.png (if exists, otherwise fallback) -->
+            <img src="logo.png" alt="NAKick" style="display: inline-block;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+            <div class="logo-fallback" style="display: none;"><i class="fas fa-shoe-prints"></i></div>
+            <div class="logo-text">NAKick<span>.</span></div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="dashboard.html" class="nav-item active">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="shoes.html" class="nav-item">
+                <i class="fas fa-shoe-prints"></i>
+                <span>Shoes Management</span>
+            </a>
+            <a href="skus.html" class="nav-item">
+                <i class="fas fa-box"></i>
+                <span>SKU Management</span>
+            </a>
+            <a href="images.html" class="nav-item">
+                <i class="fas fa-image"></i>
+                <span>Images</span>
+            </a>
+            <a href="users.html" class="nav-item">
+                <i class="fas fa-users"></i>
+                <span>Users</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Orders</span>
+            </a>
+            <a href="analytics.html" class="nav-item">
+                <i class="fas fa-chart-line"></i>
+                <span>Analytics</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="admin-card">
+                <div class="admin-avatar">JD</div>
+                <div class="admin-info">
+                    <h4>Jessie Du</h4>
+                    <p><i class="fas fa-circle"></i> Inventory Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN PANEL -->
+    <main class="dashboard-main">
+        <!-- header -->
+        <div class="main-header">
+            <div class="header-left">
+                <h1>Dashboard</h1>
+                <p><i class="fas fa-store"></i> NAKick · athletic footwear hub</p>
+            </div>
+            <div class="header-right">
+                <span class="date-badge"><i class="far fa-calendar-alt" style="margin-right:6px;"></i>Mar 18, 2026</span>
+                <div class="notification-icon">
+                    <i class="far fa-bell"></i>
+                    <span class="notification-dot"></span>
+                </div>
+                <button id="toggleApiDocs" style="background:none; border:none; cursor:pointer; font-size:1.2rem; color:#67758b;">
+                    <i class="fas fa-book"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- KPI cards (red accents) -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-icon"><i class="fas fa-dollar-sign"></i></div>
+                <div class="kpi-label">Revenue (today)</div>
+                <div class="kpi-value">$23.5K</div>
+                <div class="kpi-trend"><i class="fas fa-arrow-up"></i> +12.3%</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon"><i class="fas fa-shopping-bag"></i></div>
+                <div class="kpi-label">Orders</div>
+                <div class="kpi-value">342</div>
+                <div class="kpi-trend"><i class="fas fa-arrow-up"></i> +8.1%</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon"><i class="fas fa-users"></i></div>
+                <div class="kpi-label">Visitors</div>
+                <div class="kpi-value">2.4K</div>
+                <div class="kpi-trend trend-down"><i class="fas fa-arrow-down"></i> -3.2%</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-icon"><i class="fas fa-star"></i></div>
+                <div class="kpi-label">Conversion</div>
+                <div class="kpi-value">4.6%</div>
+                <div class="kpi-trend"><i class="fas fa-arrow-up"></i> +0.9%</div>
+            </div>
+        </div>
+
+        <!-- double card row: sales chart + category -->
+        <div class="row-duo">
+            <!-- sales chart card (simulated bar) -->
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-line"></i> Weekly sales</h3>
+                    <span class="badge-option">Last 7 days <i class="fas fa-chevron-down" style="margin-left:5px; font-size:10px;"></i></span>
+                </div>
+                <div class="bar-chart">
+                    <div class="bar-group"><div class="bar" style="height:70px;"></div><span class="bar-label">Mon</span></div>
+                    <div class="bar-group"><div class="bar" style="height:120px;"></div><span class="bar-label">Tue</span></div>
+                    <div class="bar-group"><div class="bar" style="height:95px;"></div><span class="bar-label">Wed</span></div>
+                    <div class="bar-group"><div class="bar" style="height:150px;"></div><span class="bar-label">Thu</span></div>
+                    <div class="bar-group"><div class="bar" style="height:110px;"></div><span class="bar-label">Fri</span></div>
+                    <div class="bar-group"><div class="bar" style="height:90px;"></div><span class="bar-label">Sat</span></div>
+                    <div class="bar-group"><div class="bar" style="height:60px;"></div><span class="bar-label">Sun</span></div>
+                </div>
+            </div>
+            <!-- category doughnut (simulated) -->
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-chart-pie"></i> Top categories</h3>
+                    <span class="badge-option">by revenue</span>
+                </div>
+                <div class="donut-placeholder">
+                    <div class="donut-ring"></div>
+                    <div class="donut-legend">
+                        <div class="legend-item"><span class="legend-color"></span> Running (48%)</div>
+                        <div class="legend-item"><span class="legend-color other"></span> Training (32%)</div>
+                        <div class="legend-item"><span class="legend-color other" style="background:#f5b1b3;"></span> Lifestyle (20%)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- recent orders table (red accents) -->
+        <div class="recent-orders">
+            <div class="card-header" style="margin-bottom:0.5rem;">
+                <h3><i class="fas fa-clock"></i> Recent orders</h3>
+                <a href="orders.html" class="action-link">View all <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <table class="orders-table">
+                <thead>
+                    <tr><th>Order ID</th><th>Customer</th><th>Product</th><th>Total</th><th>Status</th><th></th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>#NK1004</td><td>Alex Morgan</td><td>Air Zoom Pegasus</td><td>$189.00</td><td><span class="status-badge delivered">Delivered</span></td><td><i class="fas fa-chevron-right" style="color:var(--red-primary);"></i></td></tr>
+                    <tr><td>#NK1005</td><td>Taylor Chen</td><td>Revolution 6</td><td>$75.50</td><td><span class="status-badge">Processing</span></td><td><i class="fas fa-chevron-right" style="color:var(--red-primary);"></i></td></tr>
+                    <tr><td>#NK1006</td><td>Jamie Rivera</td><td>Court Legacy Lift</td><td>$210.00</td><td><span class="status-badge pending">Pending</span></td><td><i class="fas fa-chevron-right" style="color:var(--red-primary);"></i></td></tr>
+                    <tr><td>#NK1007</td><td>Samir Gupta</td><td>Flex Experience Run</td><td>$94.30</td><td><span class="status-badge delivered">Delivered</span></td><td><i class="fas fa-chevron-right" style="color:var(--red-primary);"></i></td></tr>
+                    <tr><td>#NK1008</td><td>Jordan Lee</td><td>Air Max SC</td><td>$135.00</td><td><span class="status-badge">Shipped</span></td><td><i class="fas fa-chevron-right" style="color:var(--red-primary);"></i></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row-duo" style="margin-top: 2rem;">
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-rocket"></i> Quick Actions</h3>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <a href="shoes.html" style="text-decoration: none;">
+                        <div style="background: var(--red-light); padding: 1.5rem; border-radius: 12px; text-align: center; transition: 0.2s ease;" onmouseover="this.style.background='var(--red-primary)'; this.style.color='white';" onmouseout="this.style.background='var(--red-light)'; this.style.color='var(--text-dark)';">
+                            <i class="fas fa-plus" style="font-size: 1.5rem; color: var(--red-primary); margin-bottom: 0.5rem;"></i>
+                            <div style="font-weight: 600; color: var(--text-dark);">Add Shoe</div>
+                        </div>
+                    </a>
+                    <a href="skus.html" style="text-decoration: none;">
+                        <div style="background: var(--gray-bg); padding: 1.5rem; border-radius: 12px; text-align: center; transition: 0.2s ease;" onmouseover="this.style.background='var(--red-light)';" onmouseout="this.style.background='var(--gray-bg)';">
+                            <i class="fas fa-box" style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                            <div style="font-weight: 600; color: var(--text-dark);">Add SKU</div>
+                        </div>
+                    </a>
+                    <a href="images.html" style="text-decoration: none;">
+                        <div style="background: var(--gray-bg); padding: 1.5rem; border-radius: 12px; text-align: center; transition: 0.2s ease;" onmouseover="this.style.background='var(--red-light)';" onmouseout="this.style.background='var(--gray-bg)';">
+                            <i class="fas fa-image" style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                            <div style="font-weight: 600; color: var(--text-dark);">Upload Image</div>
+                        </div>
+                    </a>
+                    <a href="orders.html" style="text-decoration: none;">
+                        <div style="background: var(--gray-bg); padding: 1.5rem; border-radius: 12px; text-align: center; transition: 0.2s ease;" onmouseover="this.style.background='var(--red-light)';" onmouseout="this.style.background='var(--gray-bg)';">
+                            <i class="fas fa-shopping-cart" style="font-size: 1.5rem; color: var(--text-muted); margin-bottom: 0.5rem;"></i>
+                            <div style="font-weight: 600; color: var(--text-dark);">View Orders</div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="card-header">
+                    <h3><i class="fas fa-info-circle"></i> System Status</h3>
+                </div>
+                <div style="margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-light);">
+                        <span style="font-weight: 600;">API Gateway</span>
+                        <span style="color: #1f7840; font-weight: 600;"><i class="fas fa-circle" style="font-size: 0.8rem;"></i> Online</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border-light);">
+                        <span style="font-weight: 600;">Shoes Service</span>
+                        <span style="color: #1f7840; font-weight: 600;"><i class="fas fa-circle" style="font-size: 0.8rem;"></i> Online</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.8rem 0;">
+                        <span style="font-weight: 600;">Database</span>
+                        <span style="color: #1f7840; font-weight: 600;"><i class="fas fa-circle" style="font-size: 0.8rem;"></i> Healthy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- small footer -->
+        <div class="dashboard-footer">
+            <i class="fas fa-shoe-prints"></i> NAKick admin · realtime e‑commerce dashboard <i class="fas fa-heart" style="color:var(--red-primary);"></i>
+        </div>
+    </main>
+
+    <!-- API DOCUMENTATION PANEL -->
+    <aside class="api-docs-panel" id="apiDocsPanel">
+        <div class="api-panel-header">
+            <h2><i class="fas fa-code"></i> API Endpoints</h2>
+            <button class="close-panel" onclick="document.getElementById('apiDocsPanel').classList.remove('active');">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="api-panel-content">
+            <div class="api-section">
+                <div class="api-section-title">
+                    <i class="fas fa-shoe-prints"></i> Shoes Management
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method post">POST</span>
+                    <div class="endpoint-path">/shoes-service/api/shoes</div>
+                    <div class="endpoint-info"><strong>Create Shoe</strong><br>Requires ADMIN role</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method get">GET</span>
+                    <div class="endpoint-path">/shoes-service/api/shoes</div>
+                    <div class="endpoint-info"><strong>Get All Shoes</strong><br>Public access</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method put">PUT</span>
+                    <div class="endpoint-path">/shoes-service/api/shoes/{id}</div>
+                    <div class="endpoint-info"><strong>Update Shoe</strong><br>Requires ADMIN role</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method delete">DELETE</span>
+                    <div class="endpoint-path">/shoes-service/api/shoes/{id}</div>
+                    <div class="endpoint-info"><strong>Delete Shoe</strong><br>Requires ADMIN role</div>
+                </div>
+            </div>
+
+            <div class="api-section">
+                <div class="api-section-title">
+                    <i class="fas fa-box"></i> SKU Management
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method post">POST</span>
+                    <div class="endpoint-path">/shoes-service/api/skus</div>
+                    <div class="endpoint-info"><strong>Create SKU</strong><br>Requires ADMIN role</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method get">GET</span>
+                    <div class="endpoint-path">/shoes-service/api/skus</div>
+                    <div class="endpoint-info"><strong>Get All SKUs</strong><br>Public access</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method put">PUT</span>
+                    <div class="endpoint-path">/shoes-service/api/skus/{id}/stock</div>
+                    <div class="endpoint-info"><strong>Update Stock</strong><br>Requires ADMIN role</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method delete">DELETE</span>
+                    <div class="endpoint-path">/shoes-service/api/skus/{id}</div>
+                    <div class="endpoint-info"><strong>Delete SKU</strong><br>Requires ADMIN role</div>
+                </div>
+            </div>
+
+            <div class="api-section">
+                <div class="api-section-title">
+                    <i class="fas fa-image"></i> Image Management
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method post">POST</span>
+                    <div class="endpoint-path">/shoes-service/api/images/upload</div>
+                    <div class="endpoint-info"><strong>Upload Image</strong><br>Requires ADMIN role, multipart/form-data</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method get">GET</span>
+                    <div class="endpoint-path">/shoes-service/api/images/{filename}</div>
+                    <div class="endpoint-info"><strong>Get Image</strong><br>Public access</div>
+                </div>
+                <div class="api-endpoint">
+                    <span class="endpoint-method delete">DELETE</span>
+                    <div class="endpoint-path">/shoes-service/api/images/{filename}</div>
+                    <div class="endpoint-info"><strong>Delete Image</strong><br>Requires ADMIN role</div>
+                </div>
+            </div>
+
+            <!-- API Tester -->
+            <div class="api-tester">
+                <div class="tester-header"><i class="fas fa-flask"></i> Quick API Tester</div>
+                <form class="tester-form" id="apiTesterForm">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-dark);">Method</label>
+                            <select id="testMethod" style="width: 100%;">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-dark);">URL Path</label>
+                            <input type="text" id="testUrl" placeholder="/shoes-service/api/shoes" style="width: 100%;">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-dark);">JWT Token</label>
+                        <input type="password" id="testToken" placeholder="Paste your JWT token here">
+                    </div>
+                    <div>
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: var(--text-dark);">Request Body (JSON)</label>
+                        <textarea id="testBody" placeholder='{"name": "value"}'></textarea>
+                    </div>
+                    <button type="button" class="test-button" onclick="testApi()"><i class="fas fa-play"></i> Send Request</button>
+                    <div id="testResponse" class="test-response" style="display:none;"></div>
+                </form>
+            </div>
+        </div>
+    </aside>
+
+    <script>
+        const GATEWAY_BASE_URL = 'http://localhost:8080';
+
+        function openApiDocs() {
+            document.getElementById('apiDocsPanel').classList.add('active');
+        }
+
+        document.getElementById('toggleApiDocs').addEventListener('click', openApiDocs);
+
+        function testApi() {
+            const method = document.getElementById('testMethod').value;
+            const urlPath = document.getElementById('testUrl').value;
+            const token = document.getElementById('testToken').value;
+            const bodyText = document.getElementById('testBody').value;
+            const responseDiv = document.getElementById('testResponse');
+
+            if (!urlPath) {
+                responseDiv.innerHTML = '<span class="response-error">Error: URL path is required</span>';
+                responseDiv.style.display = 'block';
+                return;
+            }
+
+            const fullUrl = GATEWAY_BASE_URL + urlPath;
+            const headers = { 'Content-Type': 'application/json' };
+
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const options = {
+                method: method,
+                headers: headers
+            };
+
+            if (['POST', 'PUT'].includes(method) && bodyText) {
+                try {
+                    options.body = JSON.stringify(JSON.parse(bodyText));
+                } catch (e) {
+                    responseDiv.innerHTML = `<span class="response-error">Error: Invalid JSON - ${e.message}</span>`;
+                    responseDiv.style.display = 'block';
+                    return;
+                }
+            }
+
+            responseDiv.innerHTML = '<span style="color:#5e6472;">Sending request...</span>';
+            responseDiv.style.display = 'block';
+
+            fetch(fullUrl, options)
+                .then(async (res) => {
+                    const data = await res.text();
+                    const statusClass = res.ok ? 'response-success' : 'response-error';
+                    const statusText = `${res.status} ${res.statusText}`;
+                    responseDiv.innerHTML = `<strong>${statusText}</strong>\n${data}`;
+                    responseDiv.className = `test-response ${statusClass}`;
+                })
+                .catch((err) => {
+                    responseDiv.innerHTML = `<span class="response-error">Error: ${err.message}</span>`;
+                    responseDiv.className = 'test-response response-error';
+                });
+        }
+
+        (function() {
+            // handle logo.png fallback (if image missing, show fallback block)
+            const logoImg = document.querySelector('.sidebar-logo img');
+            const fallbackDiv = document.querySelector('.logo-fallback');
+            if (logoImg) {
+                logoImg.onerror = function() {
+                    this.style.display = 'none';
+                    if (fallbackDiv) fallbackDiv.style.display = 'flex';
+                };
+                // if logo loads normally, hide fallback
+                logoImg.onload = function() { 
+                    if (fallbackDiv) fallbackDiv.style.display = 'none'; 
+                };
+            }
+
+            // (optional) small greeting / clock
+            const dateEl = document.querySelector('.date-badge');
+            if (dateEl) {
+                const d = new Date();
+                const options = { year:'numeric', month:'short', day:'numeric' };
+                dateEl.innerHTML = `<i class="far fa-calendar-alt" style="margin-right:6px;"></i>${d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })}`;
+            }
+        })();
+    </script>
+</body>
+</html>

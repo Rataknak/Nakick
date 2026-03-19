@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class SkuController {
 
     private final SkuService skuService;
+    private final com.nakick.shoes_service.service.FileStorageService fileStorageService;
 
     @GetMapping
     public ResponseEntity<List<SkuResponse>> getAllSkus() {
@@ -90,9 +91,19 @@ public class SkuController {
         return ResponseEntity.ok(responses);
     }
 
-    @PostMapping
-    public ResponseEntity<SkuResponse> createSku(@Valid @RequestBody SkuRequest request) {
+    @PostMapping(consumes = {"multipart/form-data"})
+    public ResponseEntity<SkuResponse> createSku(
+            @RequestPart("sku") SkuRequest request,
+            @RequestPart(value = "image", required = false) org.springframework.web.multipart.MultipartFile image
+    ) {
         try {
+            // Handle image upload if provided
+            if (image != null && !image.isEmpty()) {
+                String fileName = fileStorageService.storeFile(image);
+                String imageUrl = "http://localhost:8083/api/images/" + fileName;
+                request.setImageUrl(imageUrl);
+            }
+            
             Sku sku = skuService.createSku(
                 request.getProductId(),
                 request.getColor(),
@@ -103,15 +114,25 @@ public class SkuController {
                 request.getSkuCode()
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(SkuResponse.fromEntity(sku));
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<SkuResponse> updateSku(@PathVariable String id, 
-                                                @Valid @RequestBody SkuRequest request) {
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    public ResponseEntity<SkuResponse> updateSku(
+            @PathVariable String id,
+            @RequestPart("sku") SkuRequest request,
+            @RequestPart(value = "image", required = false) org.springframework.web.multipart.MultipartFile image
+    ) {
         try {
+            // Handle image upload if provided
+            if (image != null && !image.isEmpty()) {
+                String fileName = fileStorageService.storeFile(image);
+                String imageUrl = "http://localhost:8083/api/images/" + fileName;
+                request.setImageUrl(imageUrl);
+            }
+
             Sku sku = skuService.updateSku(
                 id,
                 request.getColor(),
@@ -122,8 +143,8 @@ public class SkuController {
                 request.getSkuCode()
             );
             return ResponseEntity.ok(SkuResponse.fromEntity(sku));
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
     }
 
