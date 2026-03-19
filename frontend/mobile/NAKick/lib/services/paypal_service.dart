@@ -13,6 +13,19 @@ class PayPalService {
   static const String _clientId = 'AdVcFivKk1XGdSqWpN3PZv3s3o7Q_pOTU9zMLwqthTkzGLGnGu6-3IvIzjLFz-WKYgH0eqb8bQeCjXNr';
   static const String _sandboxMode = 'sandbox';
   
+  /// Initialize PayPal SDK (no-op for service layer).
+  /// The UI layer should present the PayPal checkout (e.g., UsePaypal widget or a WebView).
+  /// This method exists for backward compatibility with screens that call PayPalService.initPayPal().
+  static Future<bool> initPayPal() async {
+    try {
+      // Add any SDK initialization here if/when needed.
+      _logger.i('PayPal init (no-op)');
+      return true;
+    } catch (e) {
+      _logger.e('PayPal init failed: $e');
+      return false;
+    }
+  }
 
   static Future<PaymentResponse?> createPayment({
     required String orderId,
