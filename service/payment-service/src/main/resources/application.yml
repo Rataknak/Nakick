@@ -1,0 +1,35 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: payment-service
+  docker:
+    compose:
+      enabled: false
+  
+  # MongoDB Database Configuration
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://paymentuser:paymentpass@mongodb-payment:27017/?authSource=admin}
+      database: paymentdb
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+  instance:
+    hostname: payment-service
+    prefer-ip-address: true
+
+paypal:
+  client-id: ${PAYPAL_CLIENT_ID}
+  client-secret: ${PAYPAL_CLIENT_SECRET}
+  mode: ${PAYPAL_MODE:sandbox}
+  return-url: ${PAYPAL_RETURN_URL:http://localhost:8085/api/payments/success}
+  cancel-url: ${PAYPAL_CANCEL_URL:http://localhost:8085/api/payments/cancel}
+
+logging:
+  level:
+    com.nakick.payment: DEBUG
+    com.paypal: DEBUG
