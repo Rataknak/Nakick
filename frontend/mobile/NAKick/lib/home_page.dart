@@ -14,6 +14,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late Future<List<Shoe>> _shoesFuture;
   final ShoeService _shoeService = ShoeService();
+  final PageController _pageController = PageController();
+  int _currentBannerIndex = 0;
 
   String? _selectedBrand;
   String? _selectedCategory;
@@ -27,12 +29,150 @@ class _HomePageState extends State<HomePage> {
     _loadShoes();
   }
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
   void _loadShoes() {
     setState(() {
       final brand = (_selectedBrand == null || _selectedBrand == 'All') ? null : _selectedBrand;
       final category = (_selectedCategory == null || _selectedCategory == 'All') ? null : _selectedCategory;
       _shoesFuture = _shoeService.getShoes(brand: brand, category: category);
     });
+  }
+
+  Widget _buildBanner({
+    required String title,
+    required String subtitle,
+    required String tag,
+    required Color color,
+    required Color accentColor,
+    required IconData icon,
+  }) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey[200]!, width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          children: [
+            // Watermark Icon
+            Positioned(
+              right: -10,
+              bottom: -15,
+              child: Icon(
+                icon,
+                size: 140,
+                color: accentColor.withOpacity(0.04),
+              ),
+            ),
+            
+            Row(
+              children: [
+                // Bold Accent Bar
+                Container(
+                  width: 5,
+                  height: double.infinity,
+                  color: accentColor,
+                ),
+                
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          tag,
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          title,
+                          style: TextStyle(
+                            color: Colors.grey[900],
+                            fontSize: 26,
+                            fontWeight: FontWeight.w900,
+                            height: 1.0,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                // Action Button
+                Padding(
+                  padding: const EdgeInsets.only(right: 20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: accentColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: accentColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'GO',
+                        style: TextStyle(
+                          color: Colors.grey[800],
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _refreshShoes() {
@@ -151,72 +291,63 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Banner Section
-              Container(
-                margin: const EdgeInsets.all(16),
-                height: 180,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.redAccent, Colors.red.shade700],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              // Banner Section (Carousel)
+              Column(
+                children: [
+                  SizedBox(
+                    height: 160,
+                    child: PageView(
+                      controller: _pageController,
+                      onPageChanged: (index) {
+                        setState(() {
+                          _currentBannerIndex = index;
+                        });
+                      },
+                      children: [
+                        _buildBanner(
+                          title: 'SONIC BOOM',
+                          subtitle: 'Velocity redefined',
+                          tag: 'ELITE',
+                          color: Colors.white,
+                          accentColor: Colors.redAccent,
+                          icon: Icons.bolt,
+                        ),
+                        _buildBanner(
+                          title: 'NEON PULSE',
+                          subtitle: 'Light up the street',
+                          tag: 'GLOW',
+                          color: Colors.white,
+                          accentColor: const Color(0xFF00B4D8),
+                          icon: Icons.waves,
+                        ),
+                        _buildBanner(
+                          title: 'TITAN GRIP',
+                          subtitle: 'Unshakable stability',
+                          tag: 'CORE',
+                          color: Colors.white,
+                          accentColor: Colors.black,
+                          icon: Icons.shield,
+                        ),
+                      ],
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: 20,
-                      top: 30,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'New Collection',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Up to 50% OFF',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: () {},
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Colors.redAccent,
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                            ),
-                            child: const Text(
-                              'Shop Now',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Positioned(
-                      right: -10,
-                      bottom: 0,
-                      child: Icon(
-                        Icons.directions_run,
-                        size: 150,
-                        color: Colors.white.withValues(alpha: 0.2),
-                      ),
-                    ),
-                  ],
-                ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(3, (index) {
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        height: 8,
+                        width: _currentBannerIndex == index ? 24 : 8,
+                        decoration: BoxDecoration(
+                          color: _currentBannerIndex == index ? Colors.redAccent : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    }),
+                  ),
+                ],
               ),
 
               // Brands Section
@@ -368,6 +499,7 @@ class _HomePageState extends State<HomePage> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey[300]!, width: 1.5),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withValues(alpha: 0.15),

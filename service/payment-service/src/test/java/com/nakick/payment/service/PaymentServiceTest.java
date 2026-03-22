@@ -2,19 +2,18 @@ package com.nakick.payment.service;
 
 import com.nakick.payment.dto.PaymentRequest;
 import com.nakick.payment.dto.PaymentResponse;
+import com.nakick.payment.enums.PaymentStatus;
 import com.nakick.payment.model.PaymentTransaction;
 import com.nakick.payment.repository.PaymentRepository;
-import com.paypal.orders.LinkDescription;
-import com.paypal.orders.Order;
+import com.nakick.payment.service.DemoPaymentService;
+import com.stripe.model.PaymentIntent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.Collections;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,54 +25,53 @@ import static org.mockito.Mockito.*;
 class PaymentServiceTest {
 
     @Mock
-    private PayPalService payPalService;
+    private StripeService stripeService;
 
     @Mock
     private PaymentRepository paymentRepository;
+    
+    @Mock
+    private DemoPaymentService demoPaymentService;
 
-    @InjectMocks
     private PaymentService paymentService;
 
     private PaymentRequest paymentRequest;
-    private Order mockOrder;
+    private PaymentIntent mockIntent;
 
     @BeforeEach
     void setUp() {
+        paymentService = new PaymentService(stripeService, paymentRepository, demoPaymentService);
         paymentRequest = new PaymentRequest();
         paymentRequest.setOrderId("ORDER-123");
         paymentRequest.setAmount(new BigDecimal("100.00"));
         paymentRequest.setCurrency("USD");
         paymentRequest.setDescription("Test Payment");
 
-        mockOrder = new Order();
-        mockOrder.id("PAY-123");
-        mockOrder.status("CREATED");
-        
-        LinkDescription link = new LinkDescription();
-        link.rel("approve");
-        link.href("https://paypal.com/approve");
-        mockOrder.links(Collections.singletonList(link));
+        mockIntent = mock(PaymentIntent.class);
+        when(mockIntent.getId()).thenReturn("pi_123");
+        when(mockIntent.getStatus()).thenReturn("requires_payment_method");
+        when(mockIntent.getClientSecret()).thenReturn("secret_123");
     }
 
     @Test
     void testInitiatePayment() {
-        when(payPalService.createOrder(any(PaymentRequest.class))).thenReturn(mockOrder);
+        when(stripeService.createPaymentIntent(any(PaymentRequest.class))).thenReturn(mockIntent);
         when(paymentRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PaymentResponse response = paymentService.initiatePayment(paymentRequest);
 
         assertNotNull(response);
-        assertEquals("PAY-123", response.getPaymentId());
+        assertEquals("pi_123", response.getPaymentId());
         assertEquals("ORDER-123", response.getOrderId());
-        assertEquals("https://paypal.com/approve", response.getApprovalUrl());
+        assertEquals("secret_123", response.getClientSecret());
         
-        verify(payPalService, times(1)).createOrder(any(PaymentRequest.class));
+        verify(stripeService, times(1)).createPaymentIntent(any(PaymentRequest.class));
         verify(paymentRepository, times(1)).save(any(PaymentTransaction.class));
     }
 
     @Test
     void testCompletePayment() {
-        String paymentId = "PAY-123";
+        String paymentId = "pi_123";
         String payerId = "PAYER-123";
         
         PaymentTransaction existingTransaction = new PaymentTransaction();
@@ -81,22 +79,22 @@ class PaymentServiceTest {
         existingTransaction.setOrderId("ORDER-123");
         existingTransaction.setAmount(new BigDecimal("100.00"));
         existingTransaction.setCurrency("USD");
-        existingTransaction.setStatus("CREATED");
+        existingTransaction.setStatus(PaymentStatus.PENDING);
 
-        Order capturedOrder = new Order();
-        capturedOrder.status("COMPLETED");
+        PaymentIntent confirmedIntent = mock(PaymentIntent.class);
+        when(confirmedIntent.getStatus()).thenReturn("succeeded");
 
         when(paymentRepository.findByPaymentId(paymentId)).thenReturn(Optional.of(existingTransaction));
-        when(payPalService.captureOrder(paymentId)).thenReturn(capturedOrder);
+        when(stripeService.capturePaymentIntent(paymentId)).thenReturn(confirmedIntent);
         when(paymentRepository.save(any(PaymentTransaction.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        PaymentResponse response = paymentService.completePayment(paymentId, payerId);
+        PaymentResponse response = paymentService.completePayment(paymentId);
 
         assertNotNull(response);
-        assertEquals("COMPLETED", response.getStatus());
+        assertEquals("succeeded", response.getStatus());
         
         verify(paymentRepository, times(1)).findByPaymentId(paymentId);
-        verify(payPalService, times(1)).captureOrder(paymentId);
+        verify(stripeService, times(1)).capturePaymentIntent(paymentId);
         verify(paymentRepository, times(1)).save(existingTransaction);
     }
 }

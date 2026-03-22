@@ -1,167 +1,114 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
-
-import 'package:logger/logger.dart';
-import '../models/payment_model.dart';
-import '../config/api_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class PayPalService {
-  static final Dio _dio = Dio();
-  static final Logger _logger = Logger();
-
-  // PayPal Configuration
-  static const String _clientId = 'AdVcFivKk1XGdSqWpN3PZv3s3o7Q_pOTU9zMLwqthTkzGLGnGu6-3IvIzjLFz-WKYgH0eqb8bQeCjXNr';
-  static const String _sandboxMode = 'sandbox';
-  
-  /// Initialize PayPal SDK (no-op for service layer).
-  /// The UI layer should present the PayPal checkout (e.g., UsePaypal widget or a WebView).
-  /// This method exists for backward compatibility with screens that call PayPalService.initPayPal().
-  static Future<bool> initPayPal() async {
+  static String get _host {
+    if (kIsWeb) return 'localhost';
     try {
-      // Add any SDK initialization here if/when needed.
-      _logger.i('PayPal init (no-op)');
-      return true;
-    } catch (e) {
-      _logger.e('PayPal init failed: $e');
-      return false;
-    }
+      if (Platform.isAndroid) return '10.0.2.2';
+    } catch (_) {}
+    return 'localhost';
   }
 
-  static Future<PaymentResponse?> createPayment({
+  // Route through Payment Service directly
+  static String baseUrl = 'http://$_host:8085/api/payments';
+  final Dio _dio = Dio();
+
+  PayPalService() {
+    _dio.options.baseUrl = baseUrl;
+    _dio.options.headers = {'Content-Type': 'application/json'};
+  }
+
+  Future<Map<String, dynamic>> createPayment({
     required String orderId,
     required double amount,
+    required String currency,
     required String description,
-    List<CartItem>? items,
+    required List<Map<String, dynamic>> items,
   }) async {
     try {
-      // First create payment on backend
-      final paymentRequest = {
+      // Use /initiate instead of /create
+      final response = await _dio.post('/initiate', data: {
         'orderId': orderId,
         'amount': amount,
-        'currency': 'USD',
+        'currency': currency,
         'description': description,
-        'items': items?.map((item) => item.toJson()).toList(),
-      };
-
-      final response = await _dio.post(
-        '${ApiConfig.paymentServiceUrl}/api/payments/create',
-        data: paymentRequest,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ${await _getAuthToken()}',
-          },
-        ),
-      );
-
+        'paymentMethod': 'PAYPAL',
+        'items': items.map((item) => {
+          'name': item['productName'],
+          'sku': item['skuCode'],
+          'quantity': item['quantity'],
+          'unitPrice': item['unitPrice'],
+        }).toList(),
+      });
+      
       if (response.statusCode == 200) {
-        final paymentData = response.data;
-        return PaymentResponse.fromJson(paymentData);
+        return response.data;
       } else {
-        _logger.e('Failed to create payment: ${response.statusCode}');
-        return null;
+        throw Exception('Failed to initiate payment: ${response.statusCode}');
       }
+    } on DioException catch (e) {
+      throw Exception('Payment initiation failed: ${e.response?.data ?? e.message}');
     } catch (e) {
-      _logger.e('Error creating payment: $e');
-      return null;
+      throw Exception('Payment initiation error: $e');
     }
   }
 
-  static Future<PaymentResponse?> executePayment({
+  Future<Map<String, dynamic>> executePayment({
     required String paymentId,
     required String payerId,
     required String orderId,
   }) async {
     try {
-      final response = await _dio.post(
-        '${ApiConfig.paymentServiceUrl}/api/payments/execute',
-        data: {
-          'paymentId': paymentId,
-          'payerId': payerId,
-          'orderId': orderId,
-        },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Authorization': 'Bearer ${await _getAuthToken()}',
-          },
-        ),
-      );
+      // Use /complete instead of /execute
+      final response = await _dio.post('/complete', queryParameters: {
+        'paymentId': paymentId,
+        'payerId': payerId,
+      });
 
       if (response.statusCode == 200) {
-        final paymentData = response.data;
-        return PaymentResponse.fromJson(paymentData);
+        return response.data;
       } else {
-        _logger.e('Failed to execute payment: ${response.statusCode}');
-        return null;
+        throw Exception('Failed to complete payment: ${response.statusCode}');
       }
+    } on DioException catch (e) {
+      throw Exception('Payment completion failed: ${e.response?.data ?? e.message}');
     } catch (e) {
-      _logger.e('Error executing payment: $e');
-      return null;
+      throw Exception('Payment completion error: $e');
     }
   }
 
-  static Future<PaymentDetails?> getPaymentDetails(String paymentId) async {
+  Future<Map<String, dynamic>> getPaymentDetails(String paymentId) async {
     try {
-      final response = await _dio.get(
-        '${ApiConfig.paymentServiceUrl}/api/payments/$paymentId',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer ${await _getAuthToken()}',
-          },
-        ),
-      );
+      final response = await _dio.get('/$paymentId');
 
       if (response.statusCode == 200) {
-        final paymentData = response.data;
-        return PaymentDetails.fromJson(paymentData);
+        return response.data;
       } else {
-        _logger.e('Failed to get payment details: ${response.statusCode}');
-        return null;
+        throw Exception('Failed to get payment details: ${response.statusCode}');
       }
+    } on DioException catch (e) {
+      throw Exception('Failed to get payment details: ${e.message}');
     } catch (e) {
-      _logger.e('Error getting payment details: $e');
-      return null;
+      throw Exception('Payment details error: $e');
     }
   }
 
-  static Future<String> _getAuthToken() async {
-    // Get auth token from shared preferences
-    // This should be implemented based on your auth flow
-    return 'your-auth-token-here';
-  }
-
-  static Future<Map<String, dynamic>> checkoutWithPayPal({
-    required List<CartItem> items,
-    required double totalAmount,
-    required String orderId,
-  }) async {
+  Future<bool> launchPayPalUrl(String approvalUrl) async {
     try {
-      // Step 1: Create payment on backend
-      final paymentResponse = await createPayment(
-        orderId: orderId,
-        amount: totalAmount,
-        description: 'NAKick Shoes Purchase',
-        items: items,
-      );
-
-      if (paymentResponse == null) {
-        return {'success': false, 'error': 'Failed to create payment'};
+      final uri = Uri.parse(approvalUrl);
+      if (await canLaunchUrl(uri)) {
+        // Use LaunchMode.externalApplication to open in system browser
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        return true;
+      } else {
+        throw Exception('Could not launch PayPal URL: $approvalUrl');
       }
-
-      // Step 2: Return approval URL for the UI to handle PayPal checkout.
-      // Use the approvalUrl (e.g., with the package's UsePaypal widget or a WebView) to complete payment in the UI layer.
-      return {
-        'success': true,
-        'paymentId': paymentResponse.paymentId,
-        'approvalUrl': paymentResponse.approvalUrl,
-      };
     } catch (e) {
-      _logger.e('PayPal checkout error: $e');
-      return {
-        'success': false,
-        'error': 'Payment processing failed',
-      };
+      throw Exception('Failed to launch PayPal: $e');
     }
   }
 }

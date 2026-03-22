@@ -41,8 +41,8 @@ class _MainNavigationState extends State<MainNavigation> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.category),
-            label: 'Categories',
+            icon: Icon(Icons.category_outlined),
+            label: 'Category',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_cart_outlined),

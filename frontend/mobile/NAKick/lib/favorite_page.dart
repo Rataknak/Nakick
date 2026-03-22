@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'services/cart_service.dart';
 import 'services/shoe_service.dart';
+import 'services/payment_service.dart';
+import 'services/paypal_service.dart';
 import 'models/cart.dart';
 import 'models/cart_item.dart';
+import 'models/payment.dart';
 import 'product_detail_page.dart';
+import 'pages/payment_page.dart';
+import 'pages/stripe_payment_page.dart';
+import 'payment_success_page.dart';
 
 class FavoritePage extends StatefulWidget {
   const FavoritePage({super.key});
@@ -16,6 +22,8 @@ class FavoritePage extends StatefulWidget {
 class _FavoritePageState extends State<FavoritePage> {
   final CartService _cartService = CartService();
   final ShoeService _shoeService = ShoeService();
+  final PaymentService _paymentService = PaymentService();
+  final PayPalService _paypalService = PayPalService();
   Cart? _cart;
   bool _isLoading = true;
   String? _error;
@@ -148,6 +156,340 @@ class _FavoritePageState extends State<FavoritePage> {
     );
   }
 
+  Future<void> _clearSelectedItems() async {
+    if (_selectedItemIds.isEmpty) return;
+
+    final itemsToRemove = List<String>.from(_selectedItemIds);
+    
+    try {
+      for (final itemId in itemsToRemove) {
+        await _cartService.removeItem(itemId);
+      }
+      
+      if (mounted) {
+        setState(() {
+          _selectedItemIds.clear();
+        });
+        await _loadCart();
+      }
+    } catch (e) {
+      debugPrint('Error clearing items: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error updating cart: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _proceedToCheckout() async {
+    if (_selectedCount == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select items to checkout')),
+      );
+      return;
+    }
+
+    if (_cart == null) return;
+
+    // Calculate total for selected items
+    double selectedTotal = 0.0;
+    List<CartItem> selectedItems = [];
+    for (var item in _cart!.items) {
+      if (_selectedItemIds.contains(item.id)) {
+        selectedTotal += item.price * item.quantity;
+        selectedItems.add(item);
+      }
+    }
+
+    // Show Order Summary Dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        title: Column(
+          children: [
+            Image.asset('assets/images/logo.png', height: 60),
+            const SizedBox(height: 12),
+            const Text('Order Summary', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22)),
+            const Text('Please review your items', style: TextStyle(color: Colors.grey, fontSize: 13, fontWeight: FontWeight.normal)),
+          ],
+        ),
+        content: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.9,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Divider(height: 32),
+              // Items List
+              Flexible(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: selectedItems.length,
+                    itemBuilder: (context, index) {
+                      final item = selectedItems[index];
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: Colors.grey[200]!),
+                          boxShadow: [
+                            BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
+                          ],
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 90,
+                              height: 90,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[50],
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: item.imageUrl.startsWith('http')
+                                    ? Image.network(item.imageUrl, fit: BoxFit.contain)
+                                    : Image.asset('assets/images/sh1.png', fit: BoxFit.contain),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${item.brand} ${item.model}',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      _buildDetailBadge('Size', item.size),
+                                      const SizedBox(width: 8),
+                                      _buildDetailBadge('Color', item.color),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Qty: ${item.quantity}',
+                                        style: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w600, fontSize: 14),
+                                      ),
+                                      Text(
+                                        '\$${(item.price * item.quantity).toStringAsFixed(2)}',
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.redAccent),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const Divider(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Total Amount', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16, color: Colors.grey[800])),
+                  Text(
+                    '\$${selectedTotal.toStringAsFixed(2)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 26, color: Colors.redAccent),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              
+              // Stripe Button (Main Color)
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _payWithStripe(selectedItems, selectedTotal);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 4,
+                    shadowColor: Colors.redAccent.withOpacity(0.4),
+                  ),
+                  child: const Text('PROCEED TO PAYMENT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, letterSpacing: 1.2)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Cancel Button
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('Back to Cart', style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailBadge(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.redAccent.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.redAccent.withOpacity(0.1)),
+      ),
+      child: RichText(
+        text: TextSpan(
+          style: const TextStyle(fontSize: 11, color: Colors.black87),
+          children: [
+            TextSpan(text: '$label: ', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+            TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _payWithStripe(List<CartItem> selectedItems, double total) async {
+    final String orderId = 'ORD-STRIPE-${DateTime.now().millisecondsSinceEpoch}';
+
+    try {
+      if (mounted) {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => StripePaymentPage(
+              orderId: orderId,
+              totalAmount: total,
+              description: 'NAKick Stripe Order - ${selectedItems.length} items',
+              items: selectedItems,
+            ),
+          ),
+        );
+
+        // Clear selection since items were either paid for or we just want to reset
+        setState(() {
+          _selectedItemIds.clear();
+        });
+        await _loadCart();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Stripe payment error: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _payWithPayPal(List<CartItem> selectedItems, double total) async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(color: Colors.redAccent),
+              SizedBox(width: 20),
+              Text('Initializing PayPal...'),
+            ],
+          ),
+        ),
+      );
+
+      final String orderId = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+
+      // Create items list for PayPal
+      List<Map<String, dynamic>> paypalItems = selectedItems.map((item) => {
+        'productId': item.productId,
+        'productName': '${item.brand} ${item.model}',
+        'skuCode': item.skuId,
+        'quantity': item.quantity,
+        'unitPrice': item.price,
+      }).toList();
+
+      // Create payment request
+      final paymentData = await _paypalService.createPayment(
+        orderId: orderId,
+        amount: total,
+        currency: 'USD',
+        description: 'NAKick Order - ${selectedItems.length} items',
+        items: paypalItems,
+      );
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Navigate to PaymentPage with the created payment
+      if (mounted) {
+        final result = await Navigator.push<Payment>(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentPage(
+              orderId: orderId,
+              totalAmount: total,
+              description: 'NAKick Order - ${selectedItems.length} items',
+              items: selectedItems,
+              initialPayment: Payment.fromJson(paymentData),
+            ),
+          ),
+        );
+
+        if (result != null && (result.status == 'COMPLETED' || result.status == 'succeeded')) {
+          // Success! Now clear these items from the backend cart
+          await _clearSelectedItems();
+          
+          if (mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PaymentSuccessPage(
+                  paymentId: result.paymentId,
+                  orderId: result.orderId,
+                ),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) Navigator.pop(context);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PayPal initialization failed: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,9 +557,7 @@ class _FavoritePageState extends State<FavoritePage> {
               const Spacer(),
               if (_selectedCount > 0)
                 TextButton(
-                  onPressed: () {
-                    // Logic to delete all selected items could go here
-                  },
+                  onPressed: _clearSelectedItems,
                   child: const Text('Delete', style: TextStyle(color: Colors.grey, fontSize: 14)),
                 ),
             ],
@@ -401,7 +741,7 @@ class _FavoritePageState extends State<FavoritePage> {
             const SizedBox(width: 24),
             Expanded(
               child: ElevatedButton(
-                onPressed: _selectedCount > 0 ? () {} : null,
+                onPressed: _selectedCount > 0 ? _proceedToCheckout : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,

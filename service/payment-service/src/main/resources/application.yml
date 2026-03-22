@@ -1,6 +1,9 @@
 server:
   port: 8085
 
+app:
+  server-url: ${SERVER_URL:http://localhost:8085}
+
 spring:
   application:
     name: payment-service
@@ -22,14 +25,12 @@ eureka:
     hostname: payment-service
     prefer-ip-address: true
 
-paypal:
-  client-id: ${PAYPAL_CLIENT_ID}
-  client-secret: ${PAYPAL_CLIENT_SECRET}
-  mode: ${PAYPAL_MODE:sandbox}
-  return-url: ${PAYPAL_RETURN_URL:http://localhost:8085/api/payments/success}
-  cancel-url: ${PAYPAL_CANCEL_URL:http://localhost:8085/api/payments/cancel}
+stripe:
+  api-key: ${STRIPE_API_KEY:placeholder_stripe_api_key}
+  public-key: ${STRIPE_PUBLIC_KEY:placeholder_stripe_public_key}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:placeholder_stripe_webhook_secret}
 
 logging:
   level:
-    com.nakick.payment: DEBUG
-    com.paypal: DEBUG
+    com.nakick.payment: INFO
+    root: WARN
