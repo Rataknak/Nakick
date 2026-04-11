@@ -20,27 +20,31 @@ public class ShoeController {
     
     private final ShoeService shoeService;
     private final FileStorageService fileStorageService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
     
-    @PostMapping(consumes = {"application/json", "multipart/form-data"})
-    public ResponseEntity<ShoeResponse> createShoe(
-            @RequestParam(value = "shoe", required = false) String shoeJson,
+    @GetMapping("/health")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("Shoes Service is up and running!");
+    }
+
+    @PostMapping(consumes = "application/json")
+    public ResponseEntity<ShoeResponse> createShoeJson(@Valid @RequestBody ShoeRequest request) {
+        ShoeResponse response = shoeService.createShoe(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping(consumes = "multipart/form-data")
+    public ResponseEntity<?> createShoeMultipart(
+            @RequestParam("shoe") String shoeJson,
             @RequestParam(value = "image", required = false) MultipartFile image
     ) {
         try {
-            ShoeRequest request;
-            
-            // Handle JSON from form data or regular JSON body
-            if (shoeJson != null) {
-                com.fasterxml.jackson.databind.ObjectMapper objectMapper = new com.fasterxml.jackson.databind.ObjectMapper();
-                request = objectMapper.readValue(shoeJson, ShoeRequest.class);
-            } else {
-                // This case won't happen with current frontend but kept for compatibility
-                return ResponseEntity.badRequest().build();
-            }
+            ShoeRequest request = objectMapper.readValue(shoeJson, ShoeRequest.class);
             
             // Handle image upload if provided
             if (image != null && !image.isEmpty()) {
                 String fileName = fileStorageService.storeFile(image);
+                // In a real microservices environment, this should be a configurable base URL
                 String imageUrl = "http://localhost:8083/api/images/" + fileName;
                 request.setImageUrl(imageUrl);
             }
@@ -48,7 +52,8 @@ public class ShoeController {
             ShoeResponse response = shoeService.createShoe(request);
             return new ResponseEntity<>(response, HttpStatus.CREATED);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error: " + e.getMessage());
         }
     }
     

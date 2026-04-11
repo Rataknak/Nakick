@@ -36,10 +36,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             jwtToken = authHeader.substring(7);
             try {
                 userEmail = jwtUtil.extractEmail(jwtToken);
+                // Fallback to subject if email claim is missing
+                if (userEmail == null) {
+                    userEmail = jwtUtil.extractUsername(jwtToken);
+                }
+                
                 userId = jwtUtil.extractUserId(jwtToken);
+                // Fallback to email/username if userId is missing
+                if (userId == null) {
+                    userId = userEmail;
+                }
+                
                 roles = jwtUtil.extractRoles(jwtToken);
             } catch (Exception e) {
-                logger.warn("Unable to get JWT Token");
+                logger.warn("Unable to get JWT Token: " + e.getMessage());
             }
         }
 

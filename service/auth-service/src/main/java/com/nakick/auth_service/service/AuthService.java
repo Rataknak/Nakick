@@ -122,8 +122,8 @@ public class AuthService {
             throw new RuntimeException("Email not verified. Please verify your email to login.");
         }
 
-        // Generate JWT token
-        String token = jwtUtil.generateToken(userDetails);
+        // Generate JWT token - Use the User entity directly to ensure all claims are included
+        String token = jwtUtil.generateToken(user);
 
         return AuthResponse.builder()
                 .token(token)

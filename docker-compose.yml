@@ -1,5 +1,4 @@
 services:
-  # MongoDB Database for Auth Service
   mongodb-auth:
     image: mongo:7.0
     container_name: mongodb-auth
@@ -18,8 +17,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # MongoDB Database for User Service
   mongodb-user:
     image: mongo:7.0
     container_name: mongodb-user
@@ -38,8 +35,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
-  # MongoDB Database for Shoes Service
   mongodb-shoes:
     image: mongo:7.0
     container_name: mongodb-shoes
@@ -72,6 +67,26 @@ services:
       - "27021:27017"
     volumes:
       - mongodb-cart-data:/data/db
+    networks:
+      - nakick-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB Database for Payment Service
+  mongodb-payment:
+    image: mongo:7.0
+    container_name: mongodb-payment
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: paymentuser
+      MONGO_INITDB_ROOT_PASSWORD: paymentpass
+      MONGO_INITDB_DATABASE: paymentdb
+    ports:
+      - "27022:27017"
+    volumes:
+      - mongodb-payment-data:/data/db
     networks:
       - nakick-network
     healthcheck:
@@ -142,7 +157,6 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  # Shoes Service
   shoes-service:
     build:
       context: ./service/shoes-service
@@ -166,7 +180,6 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  # User Service
   user-service:
     build:
       context: ./service/user-service
@@ -188,7 +201,6 @@ services:
         condition: service_healthy
     restart: on-failure
 
-  # Cart Service
   cart-service:
     build:
       context: ./service/cart-service
@@ -212,6 +224,30 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  payment-service:
+    build:
+      context: ./service/payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service
+    ports:
+      - "8085:8085"
+    networks:
+      - nakick-network
+    environment:
+      - SPRING_APPLICATION_NAME=PAYMENT-SERVICE
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_DATA_MONGODB_URI=mongodb://paymentuser:paymentpass@mongodb-payment:27017/paymentdb?authSource=admin
+      - SPRING_DOCKER_COMPOSE_ENABLED=false
+      - STRIPE_API_KEY=${STRIPE_API_KEY}
+      - STRIPE_PUBLIC_KEY=${STRIPE_PUBLIC_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      mongodb-payment:
+        condition: service_healthy
+    restart: on-failure
+
   # Web Admin Frontend
   web-admin:
     image: nginx:alpine
@@ -232,4 +268,5 @@ volumes:
   mongodb-user-data:
   mongodb-shoes-data:
   mongodb-cart-data:
+  mongodb-payment-data:
   uploads:
